@@ -1,7 +1,7 @@
+gunicorn
+whitenoise
 Django==6.0.2
 django-allauth==65.15.0
-gunicorn==23.0.0
 pillow==12.1.1
 razorpay==2.0.1
 requests==2.32.5
-whitenoise==7.0.0

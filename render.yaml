@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: gautam-singh-model
+    runtime: python
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate
+    startCommand: gunicorn gowthamsingh.wsgi:application --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DJANGO_ENV
+        value: production
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DEMO_MODE
+        value: "True"
+      - key: SECURE_SSL_REDIRECT
+        value: "False"
+      - key: PYTHON_VERSION
+        value: "3.12.0"
