@@ -1,0 +1,6 @@
+31: array.fill(ema_val, array.get(val, 0))
+1373: fill(p1, p2, color = leadLine1 > leadLine2 and switch_ichi ? color.rgb(67, 160, 71, 70) : color.rgb(244, 67, 54, 70))
+1793: fill(zp1, zp2, color.new(z_c1,80))
+1810: fill(plot(respectrf2?r_f+r_sm:na, "RH", color.new(color.white,70)), rfp, color.new(color.white,90))
+1811: fill(plot(respectrf2?r_f-r_sm:na, "RL", color.new(color.blue,70)), rfp, color.new(color.blue,90))
+2300: fill(bbp1, bbp2, title = "Background", color=fillColor)

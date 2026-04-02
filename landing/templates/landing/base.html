@@ -1,0 +1,318 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Gautam Singh AI Model{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #06071b;
+            --bg2: #0c0d2b;
+            --card: rgba(15, 16, 48, 0.6);
+            --text: #fff;
+            --text2: rgba(255, 255, 255, 0.65);
+            --muted: rgba(255, 255, 255, 0.4);
+            --blue: #00D2FF;
+            --purple: #6C5CE7;
+            --grad: linear-gradient(135deg, #6C5CE7, #00D2FF);
+            --border: rgba(108, 92, 231, 0.15);
+            --green: #00E676;
+            --red: #FF5252;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Nav mini */
+        .nav-mini {
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-mini a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .nav-mini .links a {
+            font-size: .85rem;
+            color: var(--text2);
+            margin-left: 20px;
+        }
+
+        .nav-mini .links a:hover {
+            color: var(--blue);
+        }
+
+        /* Auth forms */
+        .auth-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 64px);
+            padding: 40px 0;
+        }
+
+        .auth-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 48px 40px;
+            width: 100%;
+            backdrop-filter: blur(20px);
+        }
+
+        .auth-card h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .auth-card .subtitle {
+            font-size: .9rem;
+            color: var(--text2);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: .85rem;
+            font-weight: 600;
+            color: var(--text2);
+            margin-bottom: 6px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: .95rem;
+            transition: border-color .3s;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--purple);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: var(--grad);
+            color: #fff;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform .3s, box-shadow .3s;
+            margin-top: 8px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+        }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: .85rem;
+            color: var(--text2);
+        }
+
+        .auth-footer a {
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        /* Messages */
+        .messages {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .messages li {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: .85rem;
+            margin-bottom: 8px;
+        }
+
+        .messages .success {
+            background: rgba(0, 230, 118, 0.1);
+            border: 1px solid rgba(0, 230, 118, 0.3);
+            color: var(--green);
+        }
+
+        .messages .error {
+            background: rgba(255, 82, 82, 0.1);
+            border: 1px solid rgba(255, 82, 82, 0.3);
+            color: var(--red);
+        }
+
+        .messages .warning {
+            background: rgba(255, 165, 0, 0.1);
+            border: 1px solid rgba(255, 165, 0, 0.3);
+            color: #FFA500;
+        }
+
+        .errorlist {
+            list-style: none;
+            margin-top: 4px;
+        }
+
+        .errorlist li {
+            color: var(--red);
+            font-size: .8rem;
+        }
+
+        /* Google sign-in button */
+        .btn-google {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px;
+            background: #fff;
+            color: #3c4043;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: .95rem;
+            cursor: pointer;
+            transition: transform .3s, box-shadow .3s;
+            text-decoration: none;
+        }
+
+        .btn-google:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-google svg {
+            flex-shrink: 0;
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .divider span {
+            font-size: .8rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="nav-mini">
+        <a href="{% url 'home' %}">
+            <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+                <rect width="28" height="28" rx="6" fill="url(#lg)" />
+                <path d="M8 20L12 8L16 16L20 6" stroke="#fff" stroke-width="2.5" stroke-linecap="round" />
+                <defs>
+                    <linearGradient id="lg" x1="0" y1="0" x2="28" y2="28">
+                        <stop stop-color="#6C5CE7" />
+                        <stop offset="1" stop-color="#00D2FF" />
+                    </linearGradient>
+                </defs>
+            </svg>
+            <span>Gautam Singh AI</span>
+        </a>
+        <div class="links">
+            {% if user.is_authenticated %}
+            <a href="{% url 'store' %}">Store</a>
+            <a href="{% url 'my_purchases' %}">My Purchases</a>
+            <a href="{% url 'logout' %}">Logout</a>
+            {% else %}
+            <a href="{% url 'store' %}">Store</a>
+            <a href="{% url 'login' %}">Login</a>
+            <a href="{% url 'register' %}">Register</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="container" style="margin-top:16px;">
+        <ul class="messages">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</body>
+
+</html>

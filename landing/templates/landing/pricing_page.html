@@ -1,0 +1,257 @@
+{% extends "landing/base.html" %}
+{% block title %}Choose Your Plan — Gautam Singh AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pricing-page {
+        padding: 80px 0;
+        text-align: center;
+    }
+
+    .pricing-page .container {
+        max-width: 1000px;
+    }
+
+    .pricing-page h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+    }
+
+    .pricing-page .sub {
+        font-size: 1.05rem;
+        color: var(--text2);
+        margin-bottom: 48px;
+    }
+
+    .pricing-page .sub strong {
+        color: var(--blue);
+    }
+
+    .plans {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+    }
+
+    .plan {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 36px 28px;
+        text-align: left;
+        transition: all .4s;
+        position: relative;
+    }
+
+    .plan:hover {
+        border-color: rgba(0, 210, 255, 0.3);
+        transform: translateY(-6px);
+        box-shadow: 0 20px 60px rgba(108, 92, 231, 0.15);
+    }
+
+    .plan.popular {
+        border-color: var(--purple);
+        background: linear-gradient(175deg, rgba(108, 92, 231, 0.12), var(--card) 40%);
+        transform: scale(1.04);
+    }
+
+    .plan.popular:hover {
+        transform: scale(1.04) translateY(-6px);
+    }
+
+    .pop-badge {
+        position: absolute;
+        top: -13px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--grad);
+        color: #fff;
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        padding: 5px 18px;
+        border-radius: 100px;
+        white-space: nowrap;
+    }
+
+    .plan h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .plan .tagline {
+        font-size: .85rem;
+        color: var(--text2);
+        margin-bottom: 20px;
+    }
+
+    .price {
+        display: flex;
+        align-items: baseline;
+        gap: 2px;
+        margin-bottom: 16px;
+    }
+
+    .price .cur {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--text2);
+    }
+
+    .price .amt {
+        font-size: 2.8rem;
+        font-weight: 900;
+        line-height: 1;
+    }
+
+    .price .per {
+        font-size: .9rem;
+        color: var(--muted);
+    }
+
+    .save {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--green);
+        margin-bottom: 12px;
+    }
+
+    .plan ul {
+        list-style: none;
+        margin-bottom: 24px;
+    }
+
+    .plan li {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: .88rem;
+        color: var(--text2);
+        padding: 7px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .plan li:last-child {
+        border: none;
+    }
+
+    .check {
+        color: var(--blue);
+        font-weight: bold;
+    }
+
+    .btn-plan {
+        display: block;
+        width: 100%;
+        padding: 14px;
+        border: none;
+        border-radius: 12px;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: .95rem;
+        cursor: pointer;
+        text-align: center;
+        transition: all .3s;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-plan:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .plan.popular .btn-plan {
+        background: var(--grad);
+        border: none;
+    }
+
+    .plan.popular .btn-plan:hover {
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    @media(max-width:768px) {
+        .plans {
+            grid-template-columns: 1fr;
+        }
+
+        .plan.popular {
+            transform: none;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pricing-page">
+    <div class="container">
+        <h1>Choose Your Plan</h1>
+        <p class="sub">Get full access to <strong>Gautam Singh AI Model</strong> indicator. Cancel anytime.</p>
+
+        <div class="plans">
+            <!-- Monthly -->
+            <div class="plan">
+                <h3>Monthly</h3>
+                <p class="tagline">Start trading with an AI-powered edge.</p>
+                <div class="price">
+                    <span class="cur">₹</span>
+                    <span class="amt">999</span>
+                    <span class="per">/mo</span>
+                </div>
+                <ul>
+                    <li><span class="check">✓</span> Access to AI Indicator</li>
+                    <li><span class="check">✓</span> Video Guides</li>
+                    <li><span class="check">✓</span> Regular Updates</li>
+                    <li><span class="check">✓</span> Full Support</li>
+                    <li><span class="check">✓</span> Cancel Anytime</li>
+                </ul>
+                <a href="{% url 'create_checkout' 'monthly' %}" class="btn-plan">Pay ₹999 →</a>
+            </div>
+
+            <!-- Quarterly -->
+            <div class="plan popular">
+                <div class="pop-badge">MOST POPULAR</div>
+                <h3>Quarterly</h3>
+                <p class="tagline">The plan most traders choose.</p>
+                <div class="price">
+                    <span class="cur">₹</span>
+                    <span class="amt">2,499</span>
+                    <span class="per">/3 months</span>
+                </div>
+                <p class="save">Save 17% vs monthly</p>
+                <ul>
+                    <li><span class="check">✓</span> Access to AI Indicator</li>
+                    <li><span class="check">✓</span> Video Guides</li>
+                    <li><span class="check">✓</span> Regular Updates</li>
+                    <li><span class="check">✓</span> Full Support</li>
+                    <li><span class="check">✓</span> Cancel Anytime</li>
+                </ul>
+                <a href="{% url 'create_checkout' 'quarterly' %}" class="btn-plan">Pay ₹2,499 →</a>
+            </div>
+
+            <!-- Lifetime -->
+            <div class="plan">
+                <h3>Lifetime</h3>
+                <p class="tagline">Go all-in with one-time payment.</p>
+                <div class="price">
+                    <span class="cur">₹</span>
+                    <span class="amt">14,999</span>
+                    <span class="per">/once</span>
+                </div>
+                <p class="save">Only Pay Once — Forever</p>
+                <ul>
+                    <li><span class="check">✓</span> Access to AI Indicator</li>
+                    <li><span class="check">✓</span> Video Guides</li>
+                    <li><span class="check">✓</span> Regular Updates</li>
+                    <li><span class="check">✓</span> Priority Support</li>
+                    <li><span class="check">✓</span> Cancel Anytime</li>
+                </ul>
+                <a href="{% url 'create_checkout' 'lifetime' %}" class="btn-plan">Pay ₹14,999 →</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

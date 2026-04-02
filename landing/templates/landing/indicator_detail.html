@@ -1,0 +1,676 @@
+{% extends "landing/base.html" %}
+{% block title %}{{ product.name }} — Gautam Singh AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .indicator-page {
+        padding: 60px 0;
+    }
+
+    .indicator-page .container {
+        max-width: 960px;
+    }
+
+    /* Back link */
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: .88rem;
+        color: var(--text2);
+        margin-bottom: 28px;
+        transition: color .3s;
+    }
+
+    .back-link:hover {
+        color: var(--blue);
+    }
+
+    /* Product header */
+    .product-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 24px;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+    }
+
+    .product-icon-lg {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        background: var(--grad);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .product-icon-lg::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    }
+
+    .product-icon-lg svg {
+        position: relative;
+        z-index: 1;
+    }
+
+    .product-meta h1 {
+        font-size: 2rem;
+        font-weight: 900;
+        margin-bottom: 6px;
+    }
+
+    .product-meta .desc {
+        color: var(--text2);
+        font-size: .95rem;
+        line-height: 1.55;
+    }
+
+    .product-meta .price-tag {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 4px;
+        margin-top: 12px;
+        padding: 8px 20px;
+        background: rgba(108, 92, 231, 0.1);
+        border: 1px solid rgba(108, 92, 231, 0.25);
+        border-radius: 12px;
+    }
+
+    .product-meta .price-tag .cur {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text2);
+    }
+
+    .product-meta .price-tag .amt {
+        font-size: 1.6rem;
+        font-weight: 900;
+        background: var(--grad);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .product-meta .price-tag .label {
+        font-size: .75rem;
+        color: var(--muted);
+        margin-left: 4px;
+    }
+
+    /* Access card */
+    .access-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 36px 32px;
+    }
+
+    .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: .8rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 8px;
+    }
+
+    .status-badge.active {
+        background: rgba(0, 230, 118, 0.1);
+        border: 1px solid rgba(0, 230, 118, 0.3);
+        color: var(--green);
+    }
+
+    /* Code block */
+    .code-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .code-header h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+    }
+
+    .code-actions {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-code {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 8px;
+        font-family: inherit;
+        font-weight: 600;
+        font-size: .85rem;
+        cursor: pointer;
+        transition: all .3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-copy {
+        background: var(--grad);
+        color: #fff;
+    }
+
+    .btn-copy:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(108, 92, 231, 0.3);
+    }
+
+    .btn-copy.copied {
+        background: var(--green);
+    }
+
+    .btn-download {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-download:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    .code-block {
+        background: #0a0b1e;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        max-height: 600px;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+        font-size: .78rem;
+        line-height: 1.5;
+        white-space: pre;
+        color: var(--text2);
+        tab-size: 4;
+    }
+
+    .code-block::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .code-block::-webkit-scrollbar-thumb {
+        background: var(--purple);
+        border-radius: 3px;
+    }
+
+    /* Locked state */
+    .locked-card {
+        background: var(--card);
+        border: 1px solid rgba(108, 92, 231, 0.2);
+        border-radius: 20px;
+        padding: 48px 32px;
+        text-align: center;
+    }
+
+    .locked-card .lock-icon {
+        font-size: 4rem;
+        margin-bottom: 16px;
+    }
+
+    .locked-card h2 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+    }
+
+    .locked-card p {
+        font-size: .95rem;
+        color: var(--text2);
+        margin-bottom: 28px;
+        max-width: 450px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .code-preview {
+        background: #0a0b1e;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 40px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .code-preview .blur-text {
+        font-family: monospace;
+        font-size: .8rem;
+        color: var(--muted);
+        filter: blur(6px);
+        user-select: none;
+        pointer-events: none;
+        line-height: 1.5;
+    }
+
+    .code-preview .lock-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(6, 7, 27, 0.7);
+    }
+
+    .code-preview .lock-overlay .lock-emoji {
+        font-size: 2.5rem;
+        margin-bottom: 8px;
+    }
+
+    .code-preview .lock-overlay p {
+        font-size: .9rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0;
+    }
+
+    .btn-buy-lg {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 36px;
+        border: none;
+        border-radius: 14px;
+        background: var(--grad);
+        color: #fff;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: all .35s;
+        text-decoration: none;
+    }
+
+    .btn-buy-lg:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 35px rgba(108, 92, 231, 0.4);
+    }
+
+    .btn-buy-lg:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+    }
+
+    .btn-buy-lg .spinner {
+        display: none;
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255,255,255,0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin .6s linear infinite;
+    }
+
+    .btn-buy-lg.loading .spinner {
+        display: inline-block;
+    }
+
+    .btn-buy-lg.loading .btn-text {
+        display: none;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Features grid */
+    .features-mini {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+        margin-top: 32px;
+        margin-bottom: 32px;
+    }
+
+    .feature-chip {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 16px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        font-size: .85rem;
+        color: var(--text2);
+    }
+
+    .feature-chip svg {
+        flex-shrink: 0;
+    }
+
+    /* Toast */
+    .toast-container {
+        position: fixed;
+        top: 24px;
+        right: 24px;
+        z-index: 9999;
+    }
+
+    .toast {
+        background: var(--card);
+        border: 1px solid rgba(0, 230, 118, 0.3);
+        border-radius: 14px;
+        padding: 16px 24px;
+        margin-bottom: 12px;
+        font-size: .9rem;
+        color: var(--green);
+        font-weight: 600;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        animation: slideIn .4s ease-out;
+        max-width: 400px;
+    }
+
+    .toast.error {
+        border-color: rgba(255, 82, 82, 0.3);
+        color: var(--red);
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(40px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    @media (max-width: 600px) {
+        .product-header {
+            flex-direction: column;
+        }
+        .features-mini {
+            grid-template-columns: 1fr;
+        }
+        .code-actions {
+            width: 100%;
+        }
+        .btn-code {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="indicator-page">
+    <div class="container">
+
+        <a href="{% url 'store' %}" class="back-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to Store
+        </a>
+
+        <!-- Product Header -->
+        <div class="product-header">
+            <div class="product-icon-lg">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                    <polyline points="16 7 22 7 22 13" />
+                </svg>
+            </div>
+            <div class="product-meta">
+                <h1>{{ product.name }}</h1>
+                <p class="desc">{{ product.short_description }}</p>
+                {% if not has_access %}
+                <div class="price-tag">
+                    <span class="cur">₹</span>
+                    <span class="amt">{{ product.price|floatformat:0 }}</span>
+                    <span class="label">/ lifetime</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if has_access %}
+        <!-- ═══════ PURCHASED — SHOW CODE ═══════ -->
+        <div class="access-card">
+            <div class="status-bar">
+                <span class="status-badge active">✓ Purchased — Lifetime Access</span>
+            </div>
+
+            <div class="code-header">
+                <h2>📊 {{ product.name }} — Pine Script</h2>
+                <div class="code-actions">
+                    <button class="btn-code btn-copy" id="copyBtn" onclick="copyCode()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
+                        Copy Code
+                    </button>
+                    <button class="btn-code btn-download" onclick="downloadCode()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Download
+                    </button>
+                </div>
+            </div>
+
+            <div class="code-block" id="indicatorCode">{{ indicator_code }}</div>
+        </div>
+
+        {% else %}
+        <!-- ═══════ NOT PURCHASED — LOCKED ═══════ -->
+        <div class="locked-card">
+            <div class="lock-icon">🔒</div>
+            <h2>Unlock This Indicator</h2>
+            <p>Purchase <strong>{{ product.name }}</strong> to get lifetime access to the full Pine Script code for TradingView.</p>
+
+            <div class="code-preview">
+                <div class="blur-text">
+//@version=5
+indicator("{{ product.name }}", shorttitle="GS-AI", overlay=true)
+// ═══════════════════════════════════════
+// This indicator code is locked.
+// Purchase to access the full source code.
+// ═══════════════════════════════════════
+atrPeriod = input.int(9, "ATR Period")
+atrMult = input.float(2.0, "ATR Multiplier")
+// ... 200+ more lines of premium code ...
+// Fair Value Gap + Liquidity Zones
+// Buy/Sell Signals + TP/SL Boxes
+// Multi-timeframe Trend Table
+                </div>
+                <div class="lock-overlay">
+                    <div class="lock-emoji">🔐</div>
+                    <p>Code Locked — Purchase to Access</p>
+                </div>
+            </div>
+
+            {% if product.get_features_list %}
+            <div class="features-mini">
+                {% for feature in product.get_features_list %}
+                <div class="feature-chip">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D2FF" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    {{ feature }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <button class="btn-buy-lg"
+                    id="buyBtn"
+                    onclick="initPurchase('{{ product.slug }}', '{{ product.name }}', {{ product.price|floatformat:0 }})">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+                <span class="btn-text">Buy Now — ₹{{ product.price|floatformat:0 }}</span>
+                <span class="spinner"></span>
+            </button>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    function copyCode() {
+        const code = document.getElementById('indicatorCode');
+        const btn = document.getElementById('copyBtn');
+        if (!code) return;
+        navigator.clipboard.writeText(code.textContent).then(() => {
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Code';
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    }
+
+    function downloadCode() {
+        const code = document.getElementById('indicatorCode');
+        if (!code) return;
+        const blob = new Blob([code.textContent], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '{{ product.slug }}.pine';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+</script>
+
+{% if not has_access %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    function showToast(message, isError = false) {
+        const c = document.getElementById('toastContainer');
+        const t = document.createElement('div');
+        t.className = 'toast' + (isError ? ' error' : '');
+        t.textContent = message;
+        c.appendChild(t);
+        setTimeout(() => t.remove(), 5000);
+    }
+
+    function initPurchase(slug, productName, price) {
+        const btn = document.getElementById('buyBtn');
+        btn.classList.add('loading');
+        btn.disabled = true;
+
+        fetch('/api/create-order/' + slug + '/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+
+            if (data.error) {
+                showToast(data.error, true);
+                return;
+            }
+
+            if (data.demo) {
+                showToast(data.message);
+                setTimeout(() => { window.location.href = data.redirect_url; }, 1000);
+                return;
+            }
+
+            const options = {
+                key: data.key_id,
+                amount: data.amount,
+                currency: data.currency,
+                name: 'Gautam Singh AI',
+                description: data.product_name,
+                order_id: data.order_id,
+                prefill: {
+                    name: data.user_name,
+                    email: data.user_email,
+                },
+                theme: {
+                    color: '#6C5CE7',
+                    backdrop_color: 'rgba(6, 7, 27, 0.85)',
+                },
+                handler: function(response) {
+                    btn.classList.add('loading');
+                    btn.disabled = true;
+
+                    fetch('/api/verify-payment/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            product_slug: slug,
+                        }),
+                    })
+                    .then(r => r.json())
+                    .then(d => {
+                        if (d.success) {
+                            showToast(d.message);
+                            setTimeout(() => { window.location.reload(); }, 1500);
+                        } else {
+                            showToast(d.error || 'Payment verification failed.', true);
+                            btn.classList.remove('loading');
+                            btn.disabled = false;
+                        }
+                    })
+                    .catch(() => {
+                        showToast('Network error. Contact support.', true);
+                        btn.classList.remove('loading');
+                        btn.disabled = false;
+                    });
+                },
+                modal: {
+                    ondismiss: function() {
+                        btn.classList.remove('loading');
+                        btn.disabled = false;
+                    }
+                }
+            };
+
+            const rzp = new Razorpay(options);
+            rzp.open();
+        })
+        .catch(() => {
+            btn.classList.remove('loading');
+            btn.disabled = false;
+            showToast('Network error. Please try again.', true);
+        });
+    }
+</script>
+{% endif %}
+{% endblock %}

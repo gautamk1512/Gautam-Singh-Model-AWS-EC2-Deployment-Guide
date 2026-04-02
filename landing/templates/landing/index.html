@@ -1,0 +1,548 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gautam Singh AI Model | Premium Trading Indicator for Forex, Crypto & Stocks</title>
+    <meta name="description"
+        content="Enhance your trading with Gautam Singh AI Model. AI-powered buy/sell signals, TP & SL lines, and trend analysis for all markets. Start your 30-day free trial today.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'landing/styles.css' %}">
+</head>
+
+<body>
+
+    <!-- ═══════════════════════════ NAVBAR ═══════════════════════════ -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#hero" class="nav-logo">
+                <div class="logo-icon">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                        <rect width="28" height="28" rx="6" fill="url(#logoGrad)" />
+                        <path d="M8 20L12 8L16 16L20 6" stroke="white" stroke-width="2.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <defs>
+                            <linearGradient id="logoGrad" x1="0" y1="0" x2="28" y2="28">
+                                <stop stop-color="#6C5CE7" />
+                                <stop offset="1" stop-color="#00D2FF" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <span>Gautam Singh AI</span>
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="#preview" class="nav-link">Preview</a>
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#benefits" class="nav-link">Benefits</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="#faq" class="nav-link">FAQ</a>
+                <a href="/market-analysis/" class="nav-link">Market Analysis</a>
+                <a href="/vip-trades/" class="nav-link">VIP Trades</a>
+            </div>
+            <a href="/store/" class="nav-cta">Browse Store</a>
+            <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ═══════════════════════════ HERO ═══════════════════════════ -->
+    <section class="hero" id="hero">
+        <div class="hero-glow hero-glow-1"></div>
+        <div class="hero-glow hero-glow-2"></div>
+        <div class="hero-particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
+        </div>
+        <div class="container">
+            <div class="hero-badge reveal">
+                <span class="badge-dot"></span>
+                Gautam Singh AI MODEL — NOW AVAILABLE
+            </div>
+            <h1 class="hero-title reveal">
+                The <span class="gradient-text">AI-Powered Indicator</span> Top Traders Use to Stay Ahead
+            </h1>
+            <p class="hero-subtitle reveal">
+                Join thousands of traders who trust Gautam-Singh AI Model to make smarter, data-driven decisions across
+                Forex, Crypto & Stocks.
+            </p>
+            <div class="hero-ctas reveal">
+                <a href="/store/" class="btn btn-primary btn-glow">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                    Browse Indicators
+                </a>
+                <a href="#preview" class="btn btn-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    Watch Preview
+                </a>
+            </div>
+            <div class="hero-stats reveal">
+                <div class="stat">
+                    <span class="stat-number" data-count="5000">0</span><span class="stat-plus">+</span>
+                    <span class="stat-label">Active Traders</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number" data-count="95">0</span><span class="stat-plus">%</span>
+                    <span class="stat-label">Signal Accuracy</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat">
+                    <span class="stat-number" data-count="24">0</span><span class="stat-plus">/7</span>
+                    <span class="stat-label">Market Coverage</span>
+                </div>
+            </div>
+        </div>
+        <div class="hero-image-wrapper reveal">
+            <div class="hero-image-glow"></div>
+            <img src="{% static 'landing/images/hero_chart.png' %}"
+                alt="Gautam Singh AI Model indicator on TradingView chart" class="hero-image" loading="eager">
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════ SOCIAL PROOF ═══════════════════════════ -->
+    <section class="social-proof">
+        <div class="container">
+            <div class="marquee">
+                <div class="marquee-track">
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "Best indicator I've ever used" — Rajesh K.</div>
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "Changed my trading completely" — Amit P.</div>
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "AI signals are incredibly accurate" — Priya S.</div>
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "Worth every rupee, profits since day 1" — Vikram M.</div>
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "Works on crypto too! Amazing" — Deepak R.</div>
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "Best indicator I've ever used" — Rajesh K.</div>
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "Changed my trading completely" — Amit P.</div>
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "AI signals are incredibly accurate" — Priya S.</div>
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "Worth every rupee, profits since day 1" — Vikram M.</div>
+                    <div class="marquee-item">⭐⭐⭐⭐⭐ "Works on crypto too! Amazing" — Deepak R.</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════ PREVIEW ═══════════════════════════ -->
+    <section class="preview-section" id="preview">
+        <div class="container">
+            <span class="section-badge reveal">PREVIEW</span>
+            <h2 class="section-title reveal">Get Powerful Trading Signals <span class="gradient-text">For All
+                    Markets</span></h2>
+            <p class="section-subtitle reveal">Gautam Singh AI Model delivers clear, AI-driven signals across all
+                markets available on TradingView.</p>
+            <div class="preview-card reveal">
+                <img src="{% static 'landing/images/live_chart.png' %}"
+                    alt="Gautam Singh AI Model live trading signals" class="preview-image" loading="lazy">
+                <div class="preview-overlay">
+                    <div class="preview-tag">LIVE SIGNALS</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════ FEATURES ═══════════════════════════ -->
+    <section class="features-section" id="features">
+        <div class="container">
+            <span class="section-badge reveal">FEATURES</span>
+            <h2 class="section-title reveal">Everything You Get With <span class="gradient-text">Your Membership</span>
+            </h2>
+            <p class="section-subtitle reveal">Powerful tools designed to give you the edge in any market condition.</p>
+            <div class="features-grid">
+                <div class="feature-card reveal" style="--delay: 0s">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)"
+                            stroke-width="2">
+                            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                            <polyline points="16 7 22 7 22 13" />
+                            <defs>
+                                <linearGradient id="grad1" x1="0" y1="0" x2="24" y2="24">
+                                    <stop stop-color="#6C5CE7" />
+                                    <stop offset="1" stop-color="#00D2FF" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Buy & Sell Signals</h3>
+                    <p class="feature-desc">Clear AI-generated buy & sell signals to help identify potential entry and
+                        exit points in any market.</p>
+                </div>
+                <div class="feature-card reveal" style="--delay: 0.1s">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)"
+                            stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Take Profit & Stop Loss</h3>
+                    <p class="feature-desc">Automatically draws TP and SL lines so you always know exactly where to
+                        manage your risk.</p>
+                </div>
+                <div class="feature-card reveal" style="--delay: 0.2s">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)"
+                            stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                            <line x1="3" y1="9" x2="21" y2="9" />
+                            <line x1="9" y1="21" x2="9" y2="9" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Trend Dashboard</h3>
+                    <p class="feature-desc">An integrated multi-timeframe trend table lets you instantly see market
+                        direction at a glance.</p>
+                </div>
+                <div class="feature-card reveal" style="--delay: 0.3s">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)"
+                            stroke-width="2">
+                            <path
+                                d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.89-2.84 5.54L12 13l-1.16-1.46C9.4 9.89 8 7.95 8 6a4 4 0 0 1 4-4z" />
+                            <path d="M12 13v9" />
+                            <path d="M9 18h6" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">AI-Powered Analysis</h3>
+                    <p class="feature-desc">Advanced machine learning algorithms analyze price action, volume, and
+                        momentum in real-time.</p>
+                </div>
+                <div class="feature-card reveal" style="--delay: 0.4s">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)"
+                            stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Instant Notifications</h3>
+                    <p class="feature-desc">Get alerts sent directly to your phone or email the moment a new signal
+                        appears on any chart.</p>
+                </div>
+                <div class="feature-card reveal" style="--delay: 0.5s">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="url(#grad1)"
+                            stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Step-by-Step Guides</h3>
+                    <p class="feature-desc">A complete library of video tutorials and documentation to help you set up
+                        and master the indicator.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════ HOW IT WORKS ═══════════════════════════ -->
+    <section class="how-section">
+        <div class="container">
+            <span class="section-badge reveal">TUTORIAL</span>
+            <h2 class="section-title reveal">How Trading With <span class="gradient-text">Gautam Singh AI</span> Works
+            </h2>
+            <div class="steps-grid">
+                <div class="step-card reveal" style="--delay: 0s">
+                    <div class="step-number">01</div>
+                    <h3 class="step-title">Wait for a Signal</h3>
+                    <p class="step-desc">The AI model continuously scans the market. When a high-probability signal
+                        appears on your chart, you'll be notified instantly.</p>
+                </div>
+                <div class="step-connector reveal">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </div>
+                <div class="step-card reveal" style="--delay: 0.15s">
+                    <div class="step-number">02</div>
+                    <h3 class="step-title">Place Your Trade</h3>
+                    <p class="step-desc">Use the auto-generated Stop Loss & Take Profit lines to enter the trade with
+                        confidence and proper risk management.</p>
+                </div>
+                <div class="step-connector reveal">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg>
+                </div>
+                <div class="step-card reveal" style="--delay: 0.3s">
+                    <div class="step-number">03</div>
+                    <h3 class="step-title">Take Your Profits</h3>
+                    <p class="step-desc">Exit the trade at the suggested take-profit level and enjoy the profits! Repeat
+                        for consistent results.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════ BENEFITS ═══════════════════════════ -->
+    <section class="benefits-section" id="benefits">
+        <div class="container">
+            <span class="section-badge reveal">BENEFITS</span>
+            <h2 class="section-title reveal">All the Features <span class="gradient-text">You'll Need</span></h2>
+            <div class="benefits-grid">
+                <div class="benefit-card reveal" style="--delay: 0s">
+                    <div class="benefit-icon">⚙️</div>
+                    <h3 class="benefit-title">Custom Settings</h3>
+                    <p class="benefit-desc">Fully customizable settings to meet your specific trading style and market
+                        requirements.</p>
+                    <a href="#pricing" class="benefit-link">Learn more →</a>
+                </div>
+                <div class="benefit-card reveal" style="--delay: 0.1s">
+                    <div class="benefit-icon">🎯</div>
+                    <h3 class="benefit-title">TP & SL Assistance</h3>
+                    <p class="benefit-desc">Unlike other indicators, Gautam Singh AI also shows you exactly where to
+                        place your Stop Loss & Take Profit.</p>
+                    <a href="#pricing" class="benefit-link">Learn more →</a>
+                </div>
+                <div class="benefit-card reveal" style="--delay: 0.2s">
+                    <div class="benefit-icon">🔒</div>
+                    <h3 class="benefit-title">No Repaints</h3>
+                    <p class="benefit-desc">Once a signal has been generated it stays on the chart. No repainting, no
+                        misleading past data.</p>
+                    <a href="#pricing" class="benefit-link">Learn more →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════ INDICATORS PRICING ═══════════════════════════ -->
+    <section class="pricing-section" id="pricing">
+        <div class="container">
+            <span class="section-badge reveal">INDICATORS</span>
+            <h2 class="section-title reveal">Premium <span class="gradient-text">Indicators</span></h2>
+            <p class="section-subtitle reveal">Choose the indicators that match your trading style. Each purchase grants <strong>lifetime access</strong> to the Pine Script code.</p>
+            <div class="pricing-grid">
+                {% for product in products %}
+                <div class="pricing-card {% if product.is_popular %}pricing-card-popular{% endif %} reveal" style="--delay: {{ forloop.counter0 }}s">
+                    {% if product.is_popular %}
+                    <div class="popular-badge">⭐ MOST POPULAR</div>
+                    {% endif %}
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">{{ product.name }}</h3>
+                        <p class="pricing-tagline">{{ product.short_description }}</p>
+                    </div>
+                    <div class="pricing-price">
+                        <span class="price-currency">₹</span>
+                        <span class="price-amount">{{ product.price|floatformat:0 }}</span>
+                        <span class="price-period">/lifetime</span>
+                    </div>
+                    <ul class="pricing-features">
+                        {% for feature in product.get_features_list %}
+                        <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#00D2FF"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12" />
+                            </svg> {{ feature }}</li>
+                        {% endfor %}
+                    </ul>
+                    <a href="/store/" class="btn {% if product.is_popular %}btn-primary btn-glow{% endif %} btn-pricing">Buy Now — ₹{{ product.price|floatformat:0 }}</a>
+                </div>
+                {% empty %}
+                <div class="pricing-card reveal" style="--delay: 0s">
+                    <div class="pricing-header">
+                        <h3 class="pricing-name">Coming Soon</h3>
+                        <p class="pricing-tagline">Premium indicators arriving shortly.</p>
+                    </div>
+                    <div class="pricing-price">
+                        <span class="price-currency">₹</span>
+                        <span class="price-amount">—</span>
+                    </div>
+                    <a href="/store/" class="btn btn-pricing">Visit Store</a>
+                </div>
+                {% endfor %}
+            </div>
+            <p class="pricing-note reveal">All purchases grant lifetime access. Secure payments powered by Razorpay — UPI, Cards, and Netbanking accepted.</p>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════ FAQ ═══════════════════════════ -->
+    <section class="faq-section" id="faq">
+        <div class="container">
+            <span class="section-badge reveal">FAQ</span>
+            <h2 class="section-title reveal">Any Questions <span class="gradient-text">Left?</span></h2>
+            <div class="faq-list">
+                <div class="faq-item reveal">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>What happens after I start the free trial?</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="faq-chevron">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>After starting your free trial, you'll get instant access to the Gautam Singh AI Model
+                            indicator for 30 days. You'll be guided through a setup page with step-by-step video
+                            tutorials. Enter your TradingView username and our system will automatically grant you
+                            access. After 30 days, your selected plan's subscription will begin automatically. You can
+                            cancel anytime before the trial ends.</p>
+                    </div>
+                </div>
+                <div class="faq-item reveal">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>Does Gautam Singh AI Model repaint signals?</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="faq-chevron">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>No. Once a signal is confirmed and plotted on the chart, it stays there permanently. We never
+                            repaint, delete, or modify historical signals. What you see is a true representation of the
+                            indicator's performance.</p>
+                    </div>
+                </div>
+                <div class="faq-item reveal">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>What markets does it work on?</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="faq-chevron">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Gautam Singh AI Model works on every market available on TradingView — including Forex
+                            pairs, Cryptocurrencies, Stocks (NSE, BSE, NASDAQ, NYSE), Commodities, Indices, and more. If
+                            it's on TradingView, our indicator supports it.</p>
+                    </div>
+                </div>
+                <div class="faq-item reveal">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>Does it work on every timeframe?</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="faq-chevron">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! The indicator works on all timeframes — from 1-minute scalping charts to daily and
+                            weekly swing trading charts. The AI adapts its analysis to the timeframe you're viewing.</p>
+                    </div>
+                </div>
+                <div class="faq-item reveal">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>Do I need to adjust settings myself?</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="faq-chevron">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>The indicator comes pre-configured with optimal settings for most markets. However, you have
+                            full control to customize sensitivity, colors, and signal filters to match your trading
+                            style. We also provide guides on optimal settings for specific markets.</p>
+                    </div>
+                </div>
+                <div class="faq-item reveal">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>Does it work on mobile?</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="faq-chevron">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! Since Gautam Singh AI Model runs on TradingView, it works seamlessly on TradingView's
+                            mobile app for both iOS and Android. You get the same signals and features on your phone as
+                            on desktop.</p>
+                    </div>
+                </div>
+                <div class="faq-item reveal">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>Can I cancel my subscription anytime?</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="faq-chevron">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Absolutely. You can cancel your subscription at any time — no questions asked. If you cancel
+                            during the free trial, you won't be charged. If you cancel after, you'll retain access until
+                            the end of your current billing period.</p>
+                    </div>
+                </div>
+                <div class="faq-item reveal">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>Can I win every trade using this?</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" class="faq-chevron">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>No trading tool can guarantee profits on every trade. Gautam Singh AI Model is designed to
+                            give you a statistical edge by identifying high-probability setups. Combined with proper
+                            risk management, it can significantly improve your trading performance over time. Always
+                            trade responsibly.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════ CTA BANNER ═══════════════════════════ -->
+    <section class="cta-banner">
+        <div class="container">
+            <div class="cta-content reveal">
+                <h2 class="cta-title">Ready to Transform Your Trading?</h2>
+                <p class="cta-subtitle">Join thousands of traders who are already using Gautam Singh AI Model to stay
+                    ahead of the market.</p>
+                <a href="/store/" class="btn btn-primary btn-glow btn-lg">Browse Trading Indicators</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <a href="#hero" class="nav-logo">
+                        <div class="logo-icon">
+                            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                                <rect width="28" height="28" rx="6" fill="url(#logoGrad2)" />
+                                <path d="M8 20L12 8L16 16L20 6" stroke="white" stroke-width="2.5" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <defs>
+                                    <linearGradient id="logoGrad2" x1="0" y1="0" x2="28" y2="28">
+                                        <stop stop-color="#6C5CE7" />
+                                        <stop offset="1" stop-color="#00D2FF" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                        </div>
+                        <span>Gautam Singh AI</span>
+                    </a>
+                </div>
+                <div class="footer-links">
+                    <a href="#preview">Preview</a>
+                    <a href="#features">Features</a>
+                    <a href="#benefits">Benefits</a>
+                    <a href="#pricing">Pricing</a>
+                    <a href="#faq">FAQ</a>
+                </div>
+            </div>
+            <div class="footer-divider"></div>
+            <div class="footer-bottom">
+                <p class="footer-disclaimer">
+                    Trading is risky & most day traders lose money. This site & the products & services offered are for
+                    informational & educational purposes only. All content is to be considered hypothetical and should
+                    not be construed as financial advice. Decisions to buy, sell, hold or trade involve risk and are
+                    best made based on the advice of qualified financial professionals. Past performance does not
+                    guarantee future results.
+                </p>
+                <p class="footer-copyright">© 2026 Gautam Singh AI Model. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{% static 'landing/script.js' %}"></script>
+</body>
+
+</html>

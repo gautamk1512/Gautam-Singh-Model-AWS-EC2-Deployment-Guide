@@ -1,0 +1,292 @@
+{% extends "landing/base.html" %}
+{% block title %}My Purchases — Gautam Singh AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .purchases-page {
+        padding: 80px 0 60px;
+    }
+
+    .purchases-page .container {
+        max-width: 900px;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .page-header .section-badge {
+        display: inline-block;
+        font-size: .7rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        padding: 6px 16px;
+        border-radius: 100px;
+        background: rgba(108, 92, 231, 0.12);
+        border: 1px solid rgba(108, 92, 231, 0.25);
+        color: var(--purple);
+        margin-bottom: 16px;
+    }
+
+    .page-header h1 {
+        font-size: 2.2rem;
+        font-weight: 900;
+        margin-bottom: 8px;
+    }
+
+    .gradient-text {
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .page-header p {
+        color: var(--text2);
+        font-size: 1rem;
+    }
+
+    /* Purchase cards */
+    .purchase-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 28px 30px;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        transition: all .4s;
+    }
+
+    .purchase-card:hover {
+        border-color: rgba(0, 210, 255, 0.25);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 40px rgba(108, 92, 231, 0.1);
+    }
+
+    .purchase-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        background: var(--grad);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .purchase-icon::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    }
+
+    .purchase-icon svg {
+        position: relative;
+        z-index: 1;
+    }
+
+    .purchase-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .purchase-info h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .purchase-info .meta {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+        font-size: .8rem;
+        color: var(--muted);
+    }
+
+    .purchase-info .meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .purchase-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: .75rem;
+        font-weight: 700;
+        padding: 5px 12px;
+        border-radius: 100px;
+        background: rgba(0, 230, 118, 0.1);
+        border: 1px solid rgba(0, 230, 118, 0.3);
+        color: var(--green);
+    }
+
+    .purchase-actions {
+        display: flex;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .btn-view {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 22px;
+        border-radius: 12px;
+        background: var(--grad);
+        color: #fff;
+        font-weight: 700;
+        font-size: .85rem;
+        transition: all .3s;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    .btn-view:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+    }
+
+    .empty-state .icon {
+        font-size: 4rem;
+        margin-bottom: 16px;
+    }
+
+    .empty-state h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .empty-state p {
+        color: var(--text2);
+        font-size: .95rem;
+        margin-bottom: 28px;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .btn-store {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 30px;
+        border-radius: 14px;
+        background: var(--grad);
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: all .3s;
+        text-decoration: none;
+    }
+
+    .btn-store:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    /* Bottom CTA */
+    .more-cta {
+        text-align: center;
+        margin-top: 40px;
+    }
+
+    @media (max-width: 600px) {
+        .purchase-card {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .purchase-actions {
+            width: 100%;
+        }
+
+        .btn-view {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="purchases-page">
+    <div class="container">
+        <div class="page-header">
+            <div class="section-badge">YOUR INDICATORS</div>
+            <h1>My <span class="gradient-text">Purchases</span></h1>
+            <p>Access your purchased Pine Script indicators anytime.</p>
+        </div>
+
+        {% if purchases %}
+            {% for purchase in purchases %}
+            <div class="purchase-card">
+                <div class="purchase-icon">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                        <polyline points="16 7 22 7 22 13" />
+                    </svg>
+                </div>
+                <div class="purchase-info">
+                    <h3>{{ purchase.product.name }}</h3>
+                    <div class="meta">
+                        <span>₹{{ purchase.amount|floatformat:0 }}</span>
+                        <span>{{ purchase.purchased_at|date:"d M Y" }}</span>
+                        <span class="purchase-status">● Lifetime Access</span>
+                    </div>
+                </div>
+                <div class="purchase-actions">
+                    <a href="{% url 'indicator_detail' purchase.product.slug %}" class="btn-view">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        View Code
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="more-cta">
+                <a href="{% url 'store' %}" class="btn-store">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                    Browse More Indicators
+                </a>
+            </div>
+
+        {% else %}
+            <div class="empty-state">
+                <div class="icon">📊</div>
+                <h2>No Purchases Yet</h2>
+                <p>You haven't purchased any indicators yet. Browse our store to find powerful trading tools.</p>
+                <a href="{% url 'store' %}" class="btn-store">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                    Browse Indicators
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

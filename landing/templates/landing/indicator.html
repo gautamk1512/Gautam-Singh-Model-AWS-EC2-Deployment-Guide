@@ -1,0 +1,315 @@
+{% extends "landing/base.html" %}
+{% block title %}Indicator Access — Gautam Singh AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .indicator-page {
+        padding: 60px 0;
+    }
+
+    .indicator-page .container {
+        max-width: 900px;
+    }
+
+    /* Active subscription */
+    .access-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 36px 32px;
+    }
+
+    .status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: .8rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 8px;
+    }
+
+    .status-badge.active {
+        background: rgba(0, 230, 118, 0.1);
+        border: 1px solid rgba(0, 230, 118, 0.3);
+        color: var(--green);
+    }
+
+    .status-badge.expired {
+        background: rgba(255, 82, 82, 0.1);
+        border: 1px solid rgba(255, 82, 82, 0.3);
+        color: var(--red);
+    }
+
+    .days-left {
+        font-size: .85rem;
+        color: var(--text2);
+    }
+
+    .days-left strong {
+        color: var(--blue);
+    }
+
+    /* Code block */
+    .code-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+    }
+
+    .code-header h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    .btn-copy {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 8px;
+        background: var(--grad);
+        color: #fff;
+        font-family: inherit;
+        font-weight: 600;
+        font-size: .85rem;
+        cursor: pointer;
+        transition: all .3s;
+    }
+
+    .btn-copy:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(108, 92, 231, 0.3);
+    }
+
+    .btn-copy.copied {
+        background: var(--green);
+    }
+
+    .code-block {
+        background: #0a0b1e;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        max-height: 500px;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+        font-size: .78rem;
+        line-height: 1.5;
+        white-space: pre;
+        color: var(--text2);
+        tab-size: 4;
+    }
+
+    .code-block::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .code-block::-webkit-scrollbar-thumb {
+        background: var(--purple);
+        border-radius: 3px;
+    }
+
+    /* Expired state */
+    .expired-card {
+        background: var(--card);
+        border: 1px solid rgba(255, 82, 82, 0.3);
+        border-radius: 20px;
+        padding: 48px 32px;
+        text-align: center;
+    }
+
+    .expired-card .icon {
+        font-size: 4rem;
+        margin-bottom: 16px;
+    }
+
+    .expired-card h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+        color: var(--red);
+    }
+
+    .expired-card p {
+        font-size: 1rem;
+        color: var(--text2);
+        margin-bottom: 28px;
+        max-width: 450px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .expired-card .code-blocked {
+        background: #0a0b1e;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 40px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .expired-card .code-blocked .blur-text {
+        font-family: monospace;
+        font-size: .8rem;
+        color: var(--muted);
+        filter: blur(6px);
+        user-select: none;
+        pointer-events: none;
+        line-height: 1.5;
+    }
+
+    .expired-card .code-blocked .lock-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(6, 7, 27, 0.7);
+    }
+
+    .expired-card .code-blocked .lock-overlay .lock-icon {
+        font-size: 2.5rem;
+        margin-bottom: 8px;
+    }
+
+    .expired-card .code-blocked .lock-overlay p {
+        font-size: .9rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 0;
+    }
+
+    .btn-renew {
+        display: inline-block;
+        padding: 14px 32px;
+        border-radius: 12px;
+        background: var(--grad);
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+        transition: all .3s;
+        border: none;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn-renew:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    /* No subscription */
+    .no-sub {
+        text-align: center;
+        padding: 80px 0;
+    }
+
+    .no-sub h2 {
+        font-size: 1.8rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+    }
+
+    .no-sub p {
+        color: var(--text2);
+        margin-bottom: 24px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="indicator-page">
+    <div class="container">
+
+        {% if has_access %}
+        <!-- ═══════ ACTIVE SUBSCRIPTION — SHOW CODE ═══════ -->
+        <div class="access-card">
+            <div class="status-bar">
+                <span class="status-badge active">● Active — {{ subscription.get_plan_display }}</span>
+                {% if subscription.plan != "lifetime" %}
+                <span class="days-left"><strong>{{ days_left }}</strong> days remaining</span>
+                {% else %}
+                <span class="days-left"><strong>Lifetime</strong> access</span>
+                {% endif %}
+            </div>
+
+            <div class="code-header">
+                <h2>📊 Gautam Singh AI Model — Pine Script</h2>
+                <button class="btn-copy" id="copyBtn" onclick="copyCode()">Copy Code</button>
+            </div>
+
+            <div class="code-block" id="indicatorCode">{{ indicator_code }}</div>
+        </div>
+
+        {% elif subscription %}
+        <!-- ═══════ EXPIRED SUBSCRIPTION — HIDE CODE + RENEW ═══════ -->
+        <div class="expired-card">
+            <div class="icon">🔒</div>
+            <h2>Subscription Expired</h2>
+            <p>Your <strong>{{ subscription.get_plan_display }}</strong> has expired. Renew now to regain access to the
+                Gautam Singh AI Model indicator.</p>
+
+            <div class="code-blocked">
+                <div class="blur-text">
+                    //@version=5
+                    indicator("Gautam Singh AI Model", shorttitle="GS-AI", overlay=true)
+                    // ═══════════════════════════════════════
+                    // This indicator code is locked.
+                    // Please renew your subscription to access.
+                    // ═══════════════════════════════════════
+                    atrPeriod = input.int(9, "ATR Period")
+                    atrMult = input.float(2.0, "ATR Multiplier")
+                    // ... 200+ more lines of premium code ...
+                    // Fair Value Gap + Liquidity Zones
+                    // Buy/Sell Signals + TP/SL Boxes
+                    // Multi-timeframe Trend Table
+                </div>
+                <div class="lock-overlay">
+                    <div class="lock-icon">🔐</div>
+                    <p>Code Locked — Renew to Access</p>
+                </div>
+            </div>
+
+            <a href="{% url 'store' %}" class="btn-renew">🔄 Purchase in Store</a>
+        </div>
+
+        {% else %}
+        <!-- ═══════ NO SUBSCRIPTION — GET STARTED ═══════ -->
+        <div class="no-sub">
+            <div style="font-size:4rem; margin-bottom:16px;">📊</div>
+            <h2>Get Access to the Indicator</h2>
+            <p>Choose a plan to unlock the Gautam Singh AI Model indicator for TradingView.</p>
+            <a href="{% url 'store' %}" class="btn-renew">View Store & Get Access →</a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<script>
+    function copyCode() {
+        const code = document.getElementById('indicatorCode');
+        const btn = document.getElementById('copyBtn');
+        if (!code) return;
+        navigator.clipboard.writeText(code.textContent).then(() => {
+            btn.textContent = '✓ Copied!';
+            btn.classList.add('copied');
+            setTimeout(() => {
+                btn.textContent = 'Copy Code';
+                btn.classList.remove('copied');
+            }, 2000);
+        });
+    }
+</script>
+{% endblock %}

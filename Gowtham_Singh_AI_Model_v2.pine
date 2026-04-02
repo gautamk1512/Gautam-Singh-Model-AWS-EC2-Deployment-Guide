@@ -1,0 +1,940 @@
+// ══════════════════════════════════════════════════════════════
+// Gautam Singh AI Model — Swift Algo X Edition
+// Created by: Gowtham Singh
+// Version: 7.0
+//
+// Swift Algo X Features:
+//   ✅ HTF Indicator Sensitivity
+//   ✅ Algorithm Multiplier & Period
+//   ✅ Max SL Filter (Prop Firm Safe)
+//   ✅ Trend EMA (300) with Green/Red Line
+//   ✅ Multi-TF Strength Panel (1M–1W)
+//   ✅ Backtesting Panel (Win%, Settings)
+//   ✅ Buy/Short Signals with Entry/TP/SL Levels
+//   ✅ Range Filter (Smooth Range Buy/Sell)
+//
+// Core + Advanced Features (1–20): All retained from v6
+// ══════════════════════════════════════════════════════════════
+
+//@version=5
+indicator("Gautam Singh AI Model", shorttitle="Swift Algo X", overlay=true, max_labels_count=500, max_boxes_count=500, max_lines_count=500)
+
+// ═══════════════════ INPUTS ═══════════════════
+grp_swift    = "══ ⚡ Swift Algo X Settings ══"
+htfSensitivity = input.timeframe("240", "Indicator Sensitivity (HTF)", group=grp_swift, tooltip="Higher timeframe for signal data. Use TF larger than chart (e.g. 5m chart → 1H/4H). Reduces noise, stronger signals.")
+algoMultiplier = input.int(9, "Algorithm Multiplier", minval=1, maxval=20, group=grp_swift, tooltip="Signal strength control. Low=more signals (risky), High=fewer signals (accurate). Recommended: 8–12")
+algoPeriod     = input.int(4, "Algorithm Period", minval=1, maxval=20, group=grp_swift, tooltip="Calculation window for trend detection. Small=fast signals, Large=slow but stable.")
+
+grp_core     = "══ Core Settings ══"
+sensitivity  = input.string("Normal", "Sensitivity", options=["High", "Normal", "Low"], group=grp_core)
+
+grp_tpsl     = "══ Take Profit & Stop Loss ══"
+tpRR         = input.float(1.0,  "Risk Reward Ratio",  minval=0.5, maxval=10, step=0.1, group=grp_tpsl, tooltip="1 = TP equals SL (1:1). For aggressive: use 2 or 3.")
+maxSLPct     = input.float(1.0, "Max SL Size (%)", minval=0.1, maxval=10, step=0.1, group=grp_tpsl, tooltip="Maximum stop loss as % of price. Prevents over-risking.")
+enableMaxSL  = input.bool(false, "Enable Max SL Filter (Advanced)", group=grp_tpsl, tooltip="When ON, trades with SL > Max SL % are rejected. Useful for prop firm rules.")
+
+grp_trend    = "══ Trend Settings ══"
+trendEmaPeriod = input.int(300, "Trend EMA Period", minval=10, maxval=500, group=grp_trend, tooltip="Long-term trend filter. Price above EMA = BUY bias, below = SELL bias. Recommended: 200–300")
+
+grp_rf       = "══ 🔷 Range Filter ══"
+showRF       = input.bool(true, "Show Range Filter", group=grp_rf, tooltip="Enable Range Filter overlay with buy/sell signals")
+rfSource     = input(defval=close, title="RF Source", group=grp_rf)
+rfPeriod     = input.int(defval=100, minval=1, title="Sampling Period", group=grp_rf, tooltip="Smoothing period for range calculation. Higher = smoother filter.")
+rfMult       = input.float(defval=3.0, minval=0.1, title="Range Multiplier", group=grp_rf, tooltip="Range band width multiplier. Higher = wider bands, fewer signals.")
+rfUpColor    = input.color(color.white, "RF Uptrend Color", group=grp_rf)
+rfDownColor  = input.color(color.blue, "RF Downtrend Color", group=grp_rf)
+
+grp_fvg      = "══ Fair Value Gap (FVG) ══"
+showFVG      = input.bool(true,  "Show Fair Value Gaps",     group=grp_fvg)
+fvgStrong    = input.float(1.5,  "Strong FVG Threshold (× ATR)", minval=0.5, maxval=5.0, step=0.1, group=grp_fvg, tooltip="FVG wider than this × ATR is marked as STRONG")
+maxFVG       = input.int(5,      "Max FVG Boxes Shown",      minval=1, maxval=20, group=grp_fvg)
+
+grp_liq      = "══ Liquidity Zones ══"
+showLiq      = input.bool(true,  "Show Liquidity Zones",     group=grp_liq)
+liqLookback  = input.int(20,     "Liquidity Lookback Bars",  minval=5, maxval=100, group=grp_liq)
+eqThreshold  = input.float(0.1,  "Equal Level Threshold (%)", minval=0.01, maxval=1.0, step=0.01, group=grp_liq, tooltip="% difference for equal highs/lows")
+
+grp_tl       = "══ Strong Trendline AI ══"
+showTrendlines = input.bool(true,   "Show Strong Trendlines",     group=grp_tl)
+tlPivotLen     = input.int(10,      "Pivot Lookback Length",      minval=3,  maxval=50,  group=grp_tl)
+tlMinTouches   = input.int(2,       "Min Touches for Trendline", minval=2,  maxval=10,  group=grp_tl)
+tlExtendBars   = input.int(30,      "Extend Line (Bars)",        minval=5,  maxval=100, group=grp_tl)
+tlTouchTol     = input.float(0.3,   "Touch Tolerance (× ATR)",   minval=0.05, maxval=2.0, step=0.05, group=grp_tl, tooltip="How close price must come to the trendline to count as a touch")
+tlShowBreaks   = input.bool(true,   "Show Trendline Breaks",     group=grp_tl)
+
+grp_smc      = "══ Advanced SMC (11–20) ══"
+showOB       = input.bool(true,  "Show Order Blocks (Refined)",   group=grp_smc)
+showBB       = input.bool(true,  "Show Breaker Blocks",           group=grp_smc)
+showRejB     = input.bool(true,  "Show Rejection Blocks",         group=grp_smc)
+showMitig    = input.bool(true,  "Show Mitigation Zones",         group=grp_smc)
+showInduce   = input.bool(true,  "Show Inducement",               group=grp_smc)
+showIFC      = input.bool(true,  "Show Institutional Funding Candle", group=grp_smc)
+showDPZones  = input.bool(true,  "Show Discount/Premium Zones",   group=grp_smc)
+showBOS      = input.bool(true,  "Show BOS/CHoCH (SMC)",          group=grp_smc)
+showWyckoff  = input.bool(true,  "Show Wyckoff Phase",            group=grp_smc)
+
+grp_risk     = "══ Risk Management ══"
+showRiskPanel = input.bool(true,  "Show Risk Panel",        group=grp_risk)
+accountSize   = input.float(10000, "Account Size",          group=grp_risk)
+riskPercent   = input.float(1.0,   "Risk Per Trade (%)",    minval=0.1, maxval=10, step=0.1, group=grp_risk)
+
+grp_visual   = "══ Visual Settings ══"
+showSignals  = input.bool(true,  "Show Buy/Sell Signals",   group=grp_visual)
+showBoxes    = input.bool(true,  "Show TP/SL Boxes",         group=grp_visual)
+colorCandles = input.bool(true,  "Momentum Candle Colors",   group=grp_visual)
+showTable    = input.bool(true,  "Show Trend Table",          group=grp_visual)
+showHeatmap  = input.bool(true,  "Show Timeframe Heatmap",    group=grp_visual)
+
+grp_colors   = "══ Colors ══"
+bullColor    = input.color(#00E676, "Bullish / TP Color",    group=grp_colors)
+bearColor    = input.color(#FF5252, "Bearish / SL Color",    group=grp_colors)
+tpLabelClr   = input.color(#E040FB, "TP Label Color",        group=grp_colors)
+fvgBullClr   = input.color(#00BCD4, "Bullish FVG Color",     group=grp_colors)
+fvgBearClr   = input.color(#FF9800, "Bearish FVG Color",     group=grp_colors)
+liqColor     = input.color(#FFD600, "Liquidity Zone Color",  group=grp_colors)
+tlSupportClr = input.color(#00E5FF, "Support Trendline Color",  group=grp_colors)
+tlResistClr  = input.color(#FF6D00, "Resistance Trendline Color", group=grp_colors)
+obBullClr    = input.color(#2196F3, "Order Block Bullish",    group=grp_colors)
+obBearClr    = input.color(#F44336, "Order Block Bearish",    group=grp_colors)
+bbClr        = input.color(#FF6F00, "Breaker Block Color",    group=grp_colors)
+rejClr       = input.color(#AB47BC, "Rejection Block Color",  group=grp_colors)
+ifcClr       = input.color(#FFD700, "IFC Color",              group=grp_colors)
+dpBullClr    = input.color(#1B5E20, "Discount Zone Color",    group=grp_colors)
+dpBearClr    = input.color(#B71C1C, "Premium Zone Color",     group=grp_colors)
+
+// ═══════════════════ SWIFT ALGO X — SIGNAL ENGINE ═══════════════════
+// Uses HTF data via request.security for noise reduction
+sensMult = sensitivity == "High" ? 0.75 : sensitivity == "Low" ? 1.5 : 1.0
+adjMult  = algoMultiplier * sensMult
+atrVal   = ta.atr(algoPeriod)
+
+// HTF SuperTrend calculation
+htfAtr = request.security(syminfo.tickerid, htfSensitivity, ta.atr(algoPeriod))
+htfHl2 = request.security(syminfo.tickerid, htfSensitivity, hl2)
+htfClose = request.security(syminfo.tickerid, htfSensitivity, close)
+
+htfUpBand = htfHl2 + adjMult * htfAtr
+htfDnBand = htfHl2 - adjMult * htfAtr
+
+var float finalUp = na
+var float finalDn = na
+finalUp := nz(finalUp[1]) == 0 ? htfUpBand : (htfUpBand < nz(finalUp[1]) or htfClose[1] > nz(finalUp[1])) ? htfUpBand : nz(finalUp[1])
+finalDn := nz(finalDn[1]) == 0 ? htfDnBand : (htfDnBand > nz(finalDn[1]) or htfClose[1] < nz(finalDn[1])) ? htfDnBand : nz(finalDn[1])
+
+var int trend = 1
+trend := nz(trend[1], 1)
+trend := trend == -1 and htfClose > nz(finalUp[1]) ? 1 : trend == 1 and htfClose < nz(finalDn[1]) ? -1 : trend
+
+buySignal  = trend == 1  and trend[1] == -1
+sellSignal = trend == -1 and trend[1] == 1
+
+// ═══════════════════ TREND EMA (Colored Line) ═══════════════════
+trendEMA = ta.ema(close, trendEmaPeriod)
+trendEMAColor = close > trendEMA ? #00E676 : #FF5252
+plot(trendEMA, "Swift Algo X:EMA", color=trendEMAColor, linewidth=2)
+
+// ═══════════════════ 🔷 RANGE FILTER MODULE ═══════════════════
+// Smooth Average Range
+smoothrng(x, t, m) =>
+    wper = t * 2 - 1
+    avrng = ta.ema(math.abs(x - x[1]), t)
+    _smoothrng = ta.ema(avrng, wper) * m
+    _smoothrng
+smrng = smoothrng(rfSource, rfPeriod, rfMult)
+
+// Range Filter
+rngfilt(x, r) =>
+    _rngfilt = x
+    _rngfilt := x > nz(_rngfilt[1]) ? x - r < nz(_rngfilt[1]) ? nz(_rngfilt[1]) : x - r :
+       x + r > nz(_rngfilt[1]) ? nz(_rngfilt[1]) : x + r
+    _rngfilt
+filt = rngfilt(rfSource, smrng)
+
+// Filter Direction
+rfUpward = 0.0
+rfUpward := filt > filt[1] ? nz(rfUpward[1]) + 1 : filt < filt[1] ? 0 : nz(rfUpward[1])
+rfDownward = 0.0
+rfDownward := filt < filt[1] ? nz(rfDownward[1]) + 1 : filt > filt[1] ? 0 : nz(rfDownward[1])
+
+// Target Bands
+hband = filt + smrng
+lband = filt - smrng
+
+// RF Colors
+filtcolor = rfUpward > 0 ? rfUpColor : rfDownward > 0 ? rfDownColor : #90bff9
+
+// RF Plots
+filtplot = plot(showRF ? filt : na, color=filtcolor, linewidth=2, title="Range Filter")
+hbandplot = plot(showRF ? hband : na, color=color.new(rfUpColor, 70), title="RF High Target")
+lbandplot = plot(showRF ? lband : na, color=color.new(rfDownColor, 70), title="RF Low Target")
+fill(hbandplot, filtplot, color=color.new(rfUpColor, 90), title="RF High Range")
+fill(lbandplot, filtplot, color=color.new(rfDownColor, 90), title="RF Low Range")
+
+// RF Buy/Sell Signals
+rfLongCond = rfSource > filt and rfSource > rfSource[1] and rfUpward > 0 or
+   rfSource > filt and rfSource < rfSource[1] and rfUpward > 0
+rfShortCond = rfSource < filt and rfSource < rfSource[1] and rfDownward > 0 or
+   rfSource < filt and rfSource > rfSource[1] and rfDownward > 0
+
+var int rfCondIni = 0
+rfCondIni := rfLongCond ? 1 : rfShortCond ? -1 : rfCondIni[1]
+rfLongCondition  = rfLongCond and rfCondIni[1] == -1
+rfShortCondition = rfShortCond and rfCondIni[1] == 1
+
+// RF Signal Labels
+if showRF and rfLongCondition
+    label.new(bar_index, low, "RF Buy", style=label.style_label_up, color=color.new(rfUpColor, 20), textcolor=color.black, size=size.normal)
+if showRF and rfShortCondition
+    label.new(bar_index, high, "RF Sell", style=label.style_label_down, color=color.new(rfDownColor, 20), textcolor=color.white, size=size.normal)
+
+// ═══════════════════ BACKTESTING TRACKING ═══════════════════
+var int totalWins   = 0
+var int totalLosses = 0
+
+// ═══════════════════ FAIR VALUE GAP (FVG) ═══════════════════
+// Bullish FVG: candle[2] high < candle[0] low  (gap up — price skipped area)
+// Bearish FVG: candle[2] low  > candle[0] high (gap down — price skipped area)
+
+bullFVG = low > high[2]
+bearFVG = high < low[2]
+
+// FVG size
+bullFVGSize = bullFVG ? low - high[2] : 0.0
+bearFVGSize = bearFVG ? low[2] - high : 0.0
+
+// Is it STRONG?
+isStrongBullFVG = bullFVG and bullFVGSize > atrVal * fvgStrong
+isStrongBearFVG = bearFVG and bearFVGSize > atrVal * fvgStrong
+
+// Draw FVG boxes
+if showFVG and bullFVG
+    fvgBoxColor = isStrongBullFVG ? color.new(fvgBullClr, 70) : color.new(fvgBullClr, 85)
+    fvgBorder   = isStrongBullFVG ? color.new(fvgBullClr, 30) : color.new(fvgBullClr, 60)
+    bx = box.new(bar_index - 2, low, bar_index + 8, high[2], bgcolor=fvgBoxColor, border_color=fvgBorder, border_width=isStrongBullFVG ? 2 : 1)
+    lbl = isStrongBullFVG ? "⚡ STRONG FVG" : "FVG"
+    label.new(bar_index - 1, (low + high[2]) / 2, lbl, style=label.style_none, textcolor=fvgBullClr, size=size.tiny)
+
+if showFVG and bearFVG
+    fvgBoxColor = isStrongBearFVG ? color.new(fvgBearClr, 70) : color.new(fvgBearClr, 85)
+    fvgBorder   = isStrongBearFVG ? color.new(fvgBearClr, 30) : color.new(fvgBearClr, 60)
+    bx = box.new(bar_index - 2, low[2], bar_index + 8, high, bgcolor=fvgBoxColor, border_color=fvgBorder, border_width=isStrongBearFVG ? 2 : 1)
+    lbl = isStrongBearFVG ? "⚡ STRONG FVG" : "FVG"
+    label.new(bar_index - 1, (low[2] + high) / 2, lbl, style=label.style_none, textcolor=fvgBearClr, size=size.tiny)
+
+// ═══════════════════ LIQUIDITY ZONES ═══════════════════
+// Detect swing highs & lows as liquidity pools
+pivotHigh = ta.pivothigh(high, liqLookback, liqLookback)
+pivotLow  = ta.pivotlow(low, liqLookback, liqLookback)
+
+// Equal Highs (buy-side liquidity above)
+eqHighThresh = close * eqThreshold / 100
+hasEqualHigh = false
+if not na(pivotHigh)
+    for i = 1 to 5
+        offset = i * liqLookback
+        prevPH = pivotHigh[offset]
+        if not na(prevPH) and math.abs(pivotHigh - prevPH) < eqHighThresh
+            hasEqualHigh := true
+            break
+
+// Equal Lows (sell-side liquidity below)
+hasEqualLow = false
+if not na(pivotLow)
+    for i = 1 to 5
+        offset = i * liqLookback
+        prevPL = pivotLow[offset]
+        if not na(prevPL) and math.abs(pivotLow - prevPL) < eqHighThresh
+            hasEqualLow := true
+            break
+
+// Draw liquidity zones
+if showLiq and not na(pivotHigh)
+    liqAlpha = hasEqualHigh ? 70 : 85
+    lineW    = hasEqualHigh ? 2 : 1
+    liqLbl   = hasEqualHigh ? "$$$ BSL (Equal Highs)" : "BSL"
+    line.new(bar_index - liqLookback, pivotHigh, bar_index + 5, pivotHigh, color=color.new(liqColor, liqAlpha - 30), width=lineW, style=line.style_dotted)
+    label.new(bar_index - liqLookback, pivotHigh, liqLbl, style=label.style_none, textcolor=liqColor, size=size.tiny)
+
+if showLiq and not na(pivotLow)
+    liqAlpha = hasEqualLow ? 70 : 85
+    lineW    = hasEqualLow ? 2 : 1
+    liqLbl   = hasEqualLow ? "$$$ SSL (Equal Lows)" : "SSL"
+    line.new(bar_index - liqLookback, pivotLow, bar_index + 5, pivotLow, color=color.new(liqColor, liqAlpha - 30), width=lineW, style=line.style_dotted)
+    label.new(bar_index - liqLookback, pivotLow, liqLbl, style=label.style_none, textcolor=liqColor, size=size.tiny)
+
+// ═══════════════════ TRADE STATE & BOXES ═══════════════════
+swingLen  = 5
+swingHigh = ta.highest(high, swingLen)
+swingLow  = ta.lowest(low, swingLen)
+
+var float entryPrice = na
+var float slPrice    = na
+var float tpPrice    = na
+var int   sigDir     = 0
+var bool  inTrade    = false
+var int   entryBar   = na
+
+var box   tpBox     = na
+var box   slBox     = na
+var line  tpLine    = na
+var line  slLine    = na
+var line  entryLine = na
+
+// ─────────── BUY SIGNAL ───────────
+if buySignal
+    if not na(tpBox)
+        box.set_right(tpBox, bar_index)
+    if not na(slBox)
+        box.set_right(slBox, bar_index)
+    if not na(tpLine)
+        line.set_x2(tpLine, bar_index)
+    if not na(slLine)
+        line.set_x2(slLine, bar_index)
+    if not na(entryLine)
+        line.set_x2(entryLine, bar_index)
+
+    entryPrice := close
+    slPrice    := math.min(low, swingLow) - atrVal * 0.1
+    riskDist   = entryPrice - slPrice
+    tpPrice    := entryPrice + riskDist * tpRR
+    slPct      = riskDist / entryPrice * 100
+    slTooLarge = slPct > maxSLPct
+
+    // Max SL Filter: skip trade if SL is too large
+    showTrade = not enableMaxSL or not slTooLarge
+    if showTrade
+        sigDir     := 1
+        inTrade    := true
+        entryBar   := bar_index
+
+        tpBox     := box.new(bar_index, tpPrice, bar_index + 1, entryPrice, bgcolor=color.new(bullColor, 85), border_color=color.new(bullColor, 100), border_width=0)
+        slBox     := box.new(bar_index, entryPrice, bar_index + 1, slPrice, bgcolor=color.new(bearColor, 85), border_color=color.new(bearColor, 100), border_width=0)
+        tpLine    := line.new(bar_index, tpPrice, bar_index + 1, tpPrice, color=bullColor, width=2)
+        slLine    := line.new(bar_index, slPrice, bar_index + 1, slPrice, color=bearColor, width=2)
+        entryLine := line.new(bar_index, entryPrice, bar_index + 1, entryPrice, color=color.new(color.white, 50), width=1, style=line.style_dashed)
+
+        if showSignals
+            label.new(bar_index, low, "Buy\n" + str.tostring(entryPrice, format.mintick), style=label.style_label_up, color=bullColor, textcolor=color.white, size=size.normal)
+        label.new(bar_index, entryPrice, "Long Entry\n" + str.tostring(entryPrice, format.mintick), style=label.style_none, textcolor=color.white, size=size.tiny)
+        label.new(bar_index, tpPrice, "Long TP\n" + str.tostring(tpPrice, format.mintick), style=label.style_label_down, color=tpLabelClr, textcolor=color.white, size=size.small)
+        label.new(bar_index, slPrice, "Long SL\n" + str.tostring(slPrice, format.mintick), style=label.style_label_up, color=color.new(bearColor, 20), textcolor=color.white, size=size.small)
+    else if enableMaxSL and slTooLarge and showSignals
+        label.new(bar_index, low, "⚠️ SL Too Large\n" + str.tostring(slPct, "#.##") + "%", style=label.style_label_up, color=color.new(#FF9800, 30), textcolor=color.white, size=size.tiny)
+
+// ─────────── SELL SIGNAL ───────────
+if sellSignal
+    if not na(tpBox)
+        box.set_right(tpBox, bar_index)
+    if not na(slBox)
+        box.set_right(slBox, bar_index)
+    if not na(tpLine)
+        line.set_x2(tpLine, bar_index)
+    if not na(slLine)
+        line.set_x2(slLine, bar_index)
+    if not na(entryLine)
+        line.set_x2(entryLine, bar_index)
+
+    entryPrice := close
+    slPrice    := math.max(high, swingHigh) + atrVal * 0.1
+    riskDist   = slPrice - entryPrice
+    tpPrice    := entryPrice - riskDist * tpRR
+    slPct      = riskDist / entryPrice * 100
+    slTooLarge = slPct > maxSLPct
+
+    showTrade = not enableMaxSL or not slTooLarge
+    if showTrade
+        sigDir     := -1
+        inTrade    := true
+        entryBar   := bar_index
+
+        slBox     := box.new(bar_index, slPrice, bar_index + 1, entryPrice, bgcolor=color.new(bearColor, 85), border_color=color.new(bearColor, 100), border_width=0)
+        tpBox     := box.new(bar_index, entryPrice, bar_index + 1, tpPrice, bgcolor=color.new(bullColor, 85), border_color=color.new(bullColor, 100), border_width=0)
+        slLine    := line.new(bar_index, slPrice, bar_index + 1, slPrice, color=bearColor, width=2)
+        tpLine    := line.new(bar_index, tpPrice, bar_index + 1, tpPrice, color=bullColor, width=2)
+        entryLine := line.new(bar_index, entryPrice, bar_index + 1, entryPrice, color=color.new(color.white, 50), width=1, style=line.style_dashed)
+
+        if showSignals
+            label.new(bar_index, high, "Short\n" + str.tostring(entryPrice, format.mintick), style=label.style_label_down, color=bearColor, textcolor=color.white, size=size.normal)
+        label.new(bar_index, entryPrice, "Short Entry\n" + str.tostring(entryPrice, format.mintick), style=label.style_none, textcolor=color.white, size=size.tiny)
+        label.new(bar_index, tpPrice, "Short TP\n" + str.tostring(tpPrice, format.mintick), style=label.style_label_up, color=tpLabelClr, textcolor=color.white, size=size.small)
+        label.new(bar_index, slPrice, "Short SL\n" + str.tostring(slPrice, format.mintick), style=label.style_label_down, color=color.new(bearColor, 20), textcolor=color.white, size=size.small)
+    else if enableMaxSL and slTooLarge and showSignals
+        label.new(bar_index, high, "⚠️ SL Too Large\n" + str.tostring(slPct, "#.##") + "%", style=label.style_label_down, color=color.new(#FF9800, 30), textcolor=color.white, size=size.tiny)
+
+// ─────────── EXTEND BOXES & CHECK TP/SL HIT ───────────
+if inTrade and bar_index > entryBar
+    if not na(tpBox)
+        box.set_right(tpBox, bar_index + 1)
+    if not na(slBox)
+        box.set_right(slBox, bar_index + 1)
+    if not na(tpLine)
+        line.set_x2(tpLine, bar_index + 1)
+    if not na(slLine)
+        line.set_x2(slLine, bar_index + 1)
+    if not na(entryLine)
+        line.set_x2(entryLine, bar_index + 1)
+
+    if sigDir == 1
+        if high >= tpPrice
+            inTrade := false
+            totalWins += 1
+            label.new(bar_index, high, "✅ TP Hit", style=label.style_label_down, color=bullColor, textcolor=color.white, size=size.small)
+        if low <= slPrice
+            inTrade := false
+            totalLosses += 1
+            label.new(bar_index, low, "❌ SL Hit", style=label.style_label_up, color=bearColor, textcolor=color.white, size=size.small)
+
+    if sigDir == -1
+        if low <= tpPrice
+            inTrade := false
+            totalWins += 1
+            label.new(bar_index, low, "✅ TP Hit", style=label.style_label_up, color=bullColor, textcolor=color.white, size=size.small)
+        if high >= slPrice
+            inTrade := false
+            totalLosses += 1
+            label.new(bar_index, high, "❌ SL Hit", style=label.style_label_down, color=bearColor, textcolor=color.white, size=size.small)
+
+// ═══════════════════ MOMENTUM CANDLE COLORING ═══════════════════
+emaFast = ta.ema(close, 8)
+emaSlow = ta.ema(close, 21)
+mom = emaFast - emaSlow
+bullMom = mom > 0 and mom > mom[1]
+bearMom = mom < 0 and mom < mom[1]
+candleColor = not colorCandles ? na : bullMom ? bullColor : bearMom ? bearColor : trend == 1 ? color.new(bullColor, 50) : color.new(bearColor, 50)
+barcolor(candleColor)
+
+// ═══════════════════ MULTI-TIMEFRAME DATA ═══════════════════
+[c1m, ef1m, es1m]    = request.security(syminfo.tickerid, "1",   [close, ta.ema(close, 8), ta.ema(close, 21)])
+[c5, ef5, es5]       = request.security(syminfo.tickerid, "5",   [close, ta.ema(close, 8), ta.ema(close, 21)])
+[c15, ef15, es15]    = request.security(syminfo.tickerid, "15",  [close, ta.ema(close, 8), ta.ema(close, 21)])
+[c30, ef30, es30]    = request.security(syminfo.tickerid, "30",  [close, ta.ema(close, 8), ta.ema(close, 21)])
+[c60, ef60, es60]    = request.security(syminfo.tickerid, "60",  [close, ta.ema(close, 8), ta.ema(close, 21)])
+[c240, ef240, es240] = request.security(syminfo.tickerid, "240", [close, ta.ema(close, 8), ta.ema(close, 21)])
+[cD, efD, esD]       = request.security(syminfo.tickerid, "D",   [close, ta.ema(close, 8), ta.ema(close, 21)])
+[cW, efW, esW]       = request.security(syminfo.tickerid, "W",   [close, ta.ema(close, 8), ta.ema(close, 21)])
+
+// ADX for ranging detection per TF
+adx1m  = request.security(syminfo.tickerid, "1",   ta.rma(math.abs(ta.change(close)), 14) / ta.atr(14) * 100)
+adx5m  = request.security(syminfo.tickerid, "5",   ta.rma(math.abs(ta.change(close)), 14) / ta.atr(14) * 100)
+adx15  = request.security(syminfo.tickerid, "15",  ta.rma(math.abs(ta.change(close)), 14) / ta.atr(14) * 100)
+adx30  = request.security(syminfo.tickerid, "30",  ta.rma(math.abs(ta.change(close)), 14) / ta.atr(14) * 100)
+adx60  = request.security(syminfo.tickerid, "60",  ta.rma(math.abs(ta.change(close)), 14) / ta.atr(14) * 100)
+adx240 = request.security(syminfo.tickerid, "240", ta.rma(math.abs(ta.change(close)), 14) / ta.atr(14) * 100)
+adxD   = request.security(syminfo.tickerid, "D",   ta.rma(math.abs(ta.change(close)), 14) / ta.atr(14) * 100)
+adxW   = request.security(syminfo.tickerid, "W",   ta.rma(math.abs(ta.change(close)), 14) / ta.atr(14) * 100)
+
+// Helper functions
+calcStrength(float ef, float es, float c) =>
+    math.abs(ef - es) / c * 100
+
+calcTrend(float ef, float es) =>
+    ef > es ? 1 : -1
+
+getStrengthLabel(float s) =>
+    s > 1.5 ? "High" : s > 0.5 ? "Medium" : "Low"
+
+getStrengthColor(float s) =>
+    s > 1.5 ? #00E676 : s > 0.5 ? #FF9800 : #FF5252
+
+// ═══════════════════ MULTI-TF STRENGTH PANEL (Right Side) ═══════════════════
+if showTable
+    var table mtfPanel = table.new(position.middle_right, 5, 10, bgcolor=color.new(#0a0b1e, 5), border_color=color.new(color.white, 80), border_width=1, frame_color=color.new(#6C5CE7, 50), frame_width=2)
+
+    // Header row
+    table.cell(mtfPanel, 0, 0, "⚡ Timeframe", text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+    table.cell(mtfPanel, 1, 0, "📊 Trend",     text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+    table.cell(mtfPanel, 2, 0, "💪 Strength",  text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+    table.cell(mtfPanel, 3, 0, "📉 Ranging",   text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+
+    // TF data arrays — manually populate each row
+    // Row 1: 1M
+    t1m = calcTrend(ef1m, es1m), s1m = calcStrength(ef1m, es1m, c1m)
+    table.cell(mtfPanel, 0, 1, "1M",  text_color=color.white, text_size=size.tiny)
+    table.cell(mtfPanel, 1, 1, t1m == 1 ? "▲" : "▼", text_color=t1m == 1 ? #00E676 : #FF5252, text_size=size.tiny)
+    table.cell(mtfPanel, 2, 1, getStrengthLabel(s1m), text_color=getStrengthColor(s1m), text_size=size.tiny)
+    table.cell(mtfPanel, 3, 1, adx1m < 20 ? "🔴" : "🟢", text_color=color.white, text_size=size.tiny)
+
+    // Row 2: 5M
+    t5v = calcTrend(ef5, es5), s5v = calcStrength(ef5, es5, c5)
+    table.cell(mtfPanel, 0, 2, "5M",  text_color=color.white, text_size=size.tiny)
+    table.cell(mtfPanel, 1, 2, t5v == 1 ? "▲" : "▼", text_color=t5v == 1 ? #00E676 : #FF5252, text_size=size.tiny)
+    table.cell(mtfPanel, 2, 2, getStrengthLabel(s5v), text_color=getStrengthColor(s5v), text_size=size.tiny)
+    table.cell(mtfPanel, 3, 2, adx5m < 20 ? "🔴" : "🟢", text_color=color.white, text_size=size.tiny)
+
+    // Row 3: 15M
+    t15v = calcTrend(ef15, es15), s15v = calcStrength(ef15, es15, c15)
+    table.cell(mtfPanel, 0, 3, "15M", text_color=color.white, text_size=size.tiny)
+    table.cell(mtfPanel, 1, 3, t15v == 1 ? "▲" : "▼", text_color=t15v == 1 ? #00E676 : #FF5252, text_size=size.tiny)
+    table.cell(mtfPanel, 2, 3, getStrengthLabel(s15v), text_color=getStrengthColor(s15v), text_size=size.tiny)
+    table.cell(mtfPanel, 3, 3, adx15 < 20 ? "🔴" : "🟢", text_color=color.white, text_size=size.tiny)
+
+    // Row 4: 30M
+    t30v = calcTrend(ef30, es30), s30v = calcStrength(ef30, es30, c30)
+    table.cell(mtfPanel, 0, 4, "30M", text_color=color.white, text_size=size.tiny)
+    table.cell(mtfPanel, 1, 4, t30v == 1 ? "▲" : "▼", text_color=t30v == 1 ? #00E676 : #FF5252, text_size=size.tiny)
+    table.cell(mtfPanel, 2, 4, getStrengthLabel(s30v), text_color=getStrengthColor(s30v), text_size=size.tiny)
+    table.cell(mtfPanel, 3, 4, adx30 < 20 ? "🔴" : "🟢", text_color=color.white, text_size=size.tiny)
+
+    // Row 5: 1H
+    t60v = calcTrend(ef60, es60), s60v = calcStrength(ef60, es60, c60)
+    table.cell(mtfPanel, 0, 5, "1H",  text_color=color.white, text_size=size.tiny)
+    table.cell(mtfPanel, 1, 5, t60v == 1 ? "▲" : "▼", text_color=t60v == 1 ? #00E676 : #FF5252, text_size=size.tiny)
+    table.cell(mtfPanel, 2, 5, getStrengthLabel(s60v), text_color=getStrengthColor(s60v), text_size=size.tiny)
+    table.cell(mtfPanel, 3, 5, adx60 < 20 ? "🔴" : "🟢", text_color=color.white, text_size=size.tiny)
+
+    // Row 6: 4H
+    t240v = calcTrend(ef240, es240), s240v = calcStrength(ef240, es240, c240)
+    table.cell(mtfPanel, 0, 6, "4H",  text_color=color.white, text_size=size.tiny)
+    table.cell(mtfPanel, 1, 6, t240v == 1 ? "▲" : "▼", text_color=t240v == 1 ? #00E676 : #FF5252, text_size=size.tiny)
+    table.cell(mtfPanel, 2, 6, getStrengthLabel(s240v), text_color=getStrengthColor(s240v), text_size=size.tiny)
+    table.cell(mtfPanel, 3, 6, adx240 < 20 ? "🔴" : "🟢", text_color=color.white, text_size=size.tiny)
+
+    // Row 7: 1D
+    tDv = calcTrend(efD, esD), sDv = calcStrength(efD, esD, cD)
+    table.cell(mtfPanel, 0, 7, "1D",  text_color=color.white, text_size=size.tiny)
+    table.cell(mtfPanel, 1, 7, tDv == 1 ? "▲" : "▼", text_color=tDv == 1 ? #00E676 : #FF5252, text_size=size.tiny)
+    table.cell(mtfPanel, 2, 7, getStrengthLabel(sDv), text_color=getStrengthColor(sDv), text_size=size.tiny)
+    table.cell(mtfPanel, 3, 7, adxD < 20 ? "🔴" : "🟢", text_color=color.white, text_size=size.tiny)
+
+    // Row 8: 1W
+    tWv = calcTrend(efW, esW), sWv = calcStrength(efW, esW, cW)
+    table.cell(mtfPanel, 0, 8, "1W",  text_color=color.white, text_size=size.tiny)
+    table.cell(mtfPanel, 1, 8, tWv == 1 ? "▲" : "▼", text_color=tWv == 1 ? #00E676 : #FF5252, text_size=size.tiny)
+    table.cell(mtfPanel, 2, 8, getStrengthLabel(sWv), text_color=getStrengthColor(sWv), text_size=size.tiny)
+    table.cell(mtfPanel, 3, 8, adxW < 20 ? "🔴" : "🟢", text_color=color.white, text_size=size.tiny)
+
+    // Row 9: Overall Score
+    bullCount = (t1m == 1 ? 1 : 0) + (t5v == 1 ? 1 : 0) + (t15v == 1 ? 1 : 0) + (t30v == 1 ? 1 : 0) + (t60v == 1 ? 1 : 0) + (t240v == 1 ? 1 : 0) + (tDv == 1 ? 1 : 0) + (tWv == 1 ? 1 : 0)
+    bearCount = 8 - bullCount
+    overallColor = bullCount > bearCount ? #00E676 : bullCount < bearCount ? #FF5252 : #FF9800
+    table.cell(mtfPanel, 0, 9, "Overall", text_color=color.white, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+    table.cell(mtfPanel, 1, 9, "(" + str.tostring(bullCount) + "/" + str.tostring(bearCount) + ")", text_color=overallColor, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+    table.cell(mtfPanel, 2, 9, "(" + str.tostring(bullCount) + "/" + str.tostring(bearCount) + ")", text_color=overallColor, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+    table.cell(mtfPanel, 3, 9, "(" + str.tostring(bullCount) + "/" + str.tostring(bearCount) + ")", text_color=overallColor, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+
+// ═══════════════════ BACKTESTING PANEL (Top Right) ═══════════════════
+totalTrades = totalWins + totalLosses
+winPct = totalTrades > 0 ? totalWins / totalTrades * 100 : 0.0
+
+var table btPanel = table.new(position.top_right, 2, 5, bgcolor=color.new(#0a0b1e, 5), border_color=color.new(color.white, 80), border_width=1, frame_color=color.new(#6C5CE7, 50), frame_width=2)
+table.cell(btPanel, 0, 0, "📊 Backtesting", text_color=#E040FB, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+table.cell(btPanel, 1, 0, "Metrics",         text_color=#E040FB, text_size=size.tiny, bgcolor=color.new(#6C5CE7, 20))
+table.cell(btPanel, 0, 1, "Win %",           text_color=color.white, text_size=size.tiny)
+table.cell(btPanel, 1, 1, str.tostring(winPct, "#.##") + "%", text_color=winPct >= 50 ? #00E676 : #FF5252, text_size=size.tiny)
+table.cell(btPanel, 0, 2, "Current Setting", text_color=color.white, text_size=size.tiny)
+table.cell(btPanel, 1, 2, str.tostring(winPct, "#.##") + "%", text_color=winPct >= 50 ? #00E676 : #FF5252, text_size=size.tiny)
+table.cell(btPanel, 0, 3, "Multiplier",      text_color=color.white, text_size=size.tiny)
+table.cell(btPanel, 1, 3, str.tostring(algoMultiplier), text_color=#00D2FF, text_size=size.tiny)
+table.cell(btPanel, 0, 4, "Period",           text_color=color.white, text_size=size.tiny)
+table.cell(btPanel, 1, 4, str.tostring(algoPeriod), text_color=#00D2FF, text_size=size.tiny)
+
+// ═══════════════════ STRONG TRENDLINE AI MODULE (LuxAlgo Style) ═══════════════════
+// LuxAlgo-inspired trendline detection:
+//   1. Identify Key Swing Points — pivot highs/lows as anchors
+//   2. Connect the Points — higher lows (uptrend), lower highs (downtrend)
+//   3. Validate — extend lines, detect breakouts with candle-close confirmation
+//   4. Multiple trendlines stored as arrays for clean multi-line display
+
+// --- Pivot detection (called at top level for consistency) ---
+tlPivHigh = ta.pivothigh(high, tlPivotLen, tlPivotLen)
+tlPivLow  = ta.pivotlow(low, tlPivotLen, tlPivotLen)
+atrTL     = ta.atr(14)
+tlTolZone = atrTL * tlTouchTol
+
+// --- Storage: last two pivot lows (for support) ---
+var float supPiv1Y   = na       // older pivot low
+var int   supPiv1Bar = na
+var float supPiv2Y   = na       // newer pivot low
+var int   supPiv2Bar = na
+var float supSlope   = na
+var line  supLine    = na
+var bool  supActive  = false
+var bool  supBroken  = false
+
+// --- Storage: last two pivot highs (for resistance) ---
+var float resPiv1Y   = na       // older pivot high
+var int   resPiv1Bar = na
+var float resPiv2Y   = na       // newer pivot high
+var int   resPiv2Bar = na
+var float resSlope   = na
+var line  resLine    = na
+var bool  resActive  = false
+var bool  resBroken  = false
+
+// ─────────── SUPPORT TRENDLINE: Connect Higher Lows ───────────
+if showTrendlines and not na(tlPivLow)
+    pivBar = bar_index - tlPivotLen
+    pivVal = tlPivLow
+
+    if na(supPiv1Y)
+        // First pivot — store as anchor
+        supPiv1Y   := pivVal
+        supPiv1Bar := pivBar
+    else if na(supPiv2Y)
+        // Second pivot — draw initial trendline if higher low
+        if pivVal >= supPiv1Y
+            supPiv2Y   := pivVal
+            supPiv2Bar := pivBar
+            supSlope   := (supPiv2Y - supPiv1Y) / (supPiv2Bar - supPiv1Bar)
+            supActive  := true
+            supBroken  := false
+            if not na(supLine)
+                line.delete(supLine)
+            supLine := line.new(supPiv2Bar, supPiv2Y, supPiv2Bar + 1, supPiv2Y + supSlope, color=tlSupportClr, width=2, style=line.style_solid, extend=extend.right)
+            label.new(supPiv2Bar, supPiv2Y, "📈 Support TL", style=label.style_none, textcolor=tlSupportClr, size=size.tiny)
+        else
+            // Lower low — reset, not a valid uptrend connection
+            supPiv1Y   := pivVal
+            supPiv1Bar := pivBar
+    else
+        // Subsequent pivots — update trendline
+        if pivVal >= supPiv2Y
+            // New higher low confirmed — shift pivots up
+            supPiv1Y   := supPiv2Y
+            supPiv1Bar := supPiv2Bar
+            supPiv2Y   := pivVal
+            supPiv2Bar := pivBar
+            supSlope   := (supPiv2Y - supPiv1Y) / (supPiv2Bar - supPiv1Bar)
+            supActive  := true
+            supBroken  := false
+            if not na(supLine)
+                line.delete(supLine)
+            supLine := line.new(supPiv2Bar, supPiv2Y, supPiv2Bar + 1, supPiv2Y + supSlope, color=tlSupportClr, width=2, style=line.style_solid, extend=extend.right)
+            label.new(supPiv2Bar, supPiv2Y, "📈 Support TL", style=label.style_none, textcolor=tlSupportClr, size=size.tiny)
+        else if pivVal < supPiv1Y
+            // Broke the sequence — start fresh
+            supPiv1Y   := pivVal
+            supPiv1Bar := pivBar
+            supPiv2Y   := na
+            supPiv2Bar := na
+            supActive  := false
+
+// ─────────── RESISTANCE TRENDLINE: Connect Lower Highs ───────────
+if showTrendlines and not na(tlPivHigh)
+    pivBar = bar_index - tlPivotLen
+    pivVal = tlPivHigh
+
+    if na(resPiv1Y)
+        // First pivot — store as anchor
+        resPiv1Y   := pivVal
+        resPiv1Bar := pivBar
+    else if na(resPiv2Y)
+        // Second pivot — draw initial trendline if lower high
+        if pivVal <= resPiv1Y
+            resPiv2Y   := pivVal
+            resPiv2Bar := pivBar
+            resSlope   := (resPiv2Y - resPiv1Y) / (resPiv2Bar - resPiv1Bar)
+            resActive  := true
+            resBroken  := false
+            if not na(resLine)
+                line.delete(resLine)
+            resLine := line.new(resPiv2Bar, resPiv2Y, resPiv2Bar + 1, resPiv2Y + resSlope, color=tlResistClr, width=2, style=line.style_solid, extend=extend.right)
+            label.new(resPiv2Bar, resPiv2Y, "📉 Resist TL", style=label.style_none, textcolor=tlResistClr, size=size.tiny)
+        else
+            // Higher high — reset, not a valid downtrend connection
+            resPiv1Y   := pivVal
+            resPiv1Bar := pivBar
+    else
+        // Subsequent pivots — update trendline
+        if pivVal <= resPiv2Y
+            // New lower high confirmed — shift pivots down
+            resPiv1Y   := resPiv2Y
+            resPiv1Bar := resPiv2Bar
+            resPiv2Y   := pivVal
+            resPiv2Bar := pivBar
+            resSlope   := (resPiv2Y - resPiv1Y) / (resPiv2Bar - resPiv1Bar)
+            resActive  := true
+            resBroken  := false
+            if not na(resLine)
+                line.delete(resLine)
+            resLine := line.new(resPiv2Bar, resPiv2Y, resPiv2Bar + 1, resPiv2Y + resSlope, color=tlResistClr, width=2, style=line.style_solid, extend=extend.right)
+            label.new(resPiv2Bar, resPiv2Y, "📉 Resist TL", style=label.style_none, textcolor=tlResistClr, size=size.tiny)
+        else if pivVal > resPiv1Y
+            // Broke the sequence — start fresh
+            resPiv1Y   := pivVal
+            resPiv1Bar := pivBar
+            resPiv2Y   := na
+            resPiv2Bar := na
+            resActive  := false
+
+// ─────────── BREAKOUT DETECTION (Candle-close confirmed) ───────────
+// LuxAlgo style: wait for candle CLOSE beyond the trendline before signaling
+tlSupBreak = false
+tlResBreak = false
+
+if showTrendlines and tlShowBreaks and supActive and not supBroken and not na(supSlope)
+    currentSupY = supPiv2Y + supSlope * (bar_index - supPiv2Bar)
+    if close < currentSupY - tlTolZone
+        supBroken  := true
+        tlSupBreak := true
+        supActive  := false
+        label.new(bar_index, low, "🔻 BREAK\nSupport Lost", style=label.style_label_up, color=bearColor, textcolor=color.white, size=size.small)
+        // Change broken line to dashed to show it's invalidated
+        if not na(supLine)
+            line.set_style(supLine, line.style_dashed)
+            line.set_extend(supLine, extend.none)
+            line.set_x2(supLine, bar_index)
+            line.set_y2(supLine, currentSupY)
+
+if showTrendlines and tlShowBreaks and resActive and not resBroken and not na(resSlope)
+    currentResY = resPiv2Y + resSlope * (bar_index - resPiv2Bar)
+    if close > currentResY + tlTolZone
+        resBroken  := true
+        tlResBreak := true
+        resActive  := false
+        label.new(bar_index, high, "🔺 BREAK\nResist Broken", style=label.style_label_down, color=bullColor, textcolor=color.white, size=size.small)
+        // Change broken line to dashed to show it's invalidated
+        if not na(resLine)
+            line.set_style(resLine, line.style_dashed)
+            line.set_extend(resLine, extend.none)
+            line.set_x2(resLine, bar_index)
+            line.set_y2(resLine, currentResY)
+
+// ═══════════════════ 16. REFINED ORDER BLOCK ═══════════════════
+// Bullish OB: Last bearish candle before a bullish impulse move
+// Bearish OB: Last bullish candle before a bearish impulse move
+
+impulseATR = atrVal * 1.5
+bullImpulse = close > open and (close - open) > impulseATR
+bearImpulse = close < open and (open - close) > impulseATR
+
+// Bullish OB: previous candle was bearish, current is bullish impulse
+bullOB = bullImpulse and close[1] < open[1]
+// Bearish OB: previous candle was bullish, current is bearish impulse
+bearOB = bearImpulse and close[1] > open[1]
+
+if showOB and bullOB
+    box.new(bar_index - 1, open[1], bar_index + 10, close[1], bgcolor=color.new(obBullClr, 80), border_color=color.new(obBullClr, 40), border_width=1)
+    label.new(bar_index - 1, close[1], "OB 🟢", style=label.style_none, textcolor=obBullClr, size=size.tiny)
+
+if showOB and bearOB
+    box.new(bar_index - 1, close[1], bar_index + 10, open[1], bgcolor=color.new(obBearClr, 80), border_color=color.new(obBearClr, 40), border_width=1)
+    label.new(bar_index - 1, open[1], "OB 🔴", style=label.style_none, textcolor=obBearClr, size=size.tiny)
+
+// ═══════════════════ 15. BREAKER BLOCK ═══════════════════
+// Failed order block that becomes support/resistance
+// Bull Breaker: bearish OB that gets broken to upside (failed resistance → support)
+// Bear Breaker: bullish OB that gets broken to downside (failed support → resistance)
+
+bullBreaker = bearOB[1] and close > open[1] and close > high[1]
+bearBreaker = bullOB[1] and close < open[1] and close < low[1]
+
+if showBB and bullBreaker
+    box.new(bar_index - 2, close[2], bar_index + 8, open[2], bgcolor=color.new(bbClr, 82), border_color=color.new(bbClr, 40), border_width=2)
+    label.new(bar_index - 1, high, "⚡ Breaker", style=label.style_none, textcolor=bbClr, size=size.tiny)
+
+if showBB and bearBreaker
+    box.new(bar_index - 2, open[2], bar_index + 8, close[2], bgcolor=color.new(bbClr, 82), border_color=color.new(bbClr, 40), border_width=2)
+    label.new(bar_index - 1, low, "⚡ Breaker", style=label.style_none, textcolor=bbClr, size=size.tiny)
+
+// ═══════════════════ 17. REJECTION BLOCK ═══════════════════
+// Large wicks at key levels — institutional rejection
+// Bull Rejection: long lower wick (> 60% of candle range)
+// Bear Rejection: long upper wick (> 60% of candle range)
+
+candleRange = high - low
+lowerWick = math.min(open, close) - low
+upperWick = high - math.max(open, close)
+wickRatio = 0.6
+
+bullRejection = candleRange > 0 and lowerWick / candleRange > wickRatio and candleRange > atrVal * 0.5
+bearRejection = candleRange > 0 and upperWick / candleRange > wickRatio and candleRange > atrVal * 0.5
+
+if showRejB and bullRejection
+    box.new(bar_index, math.min(open, close), bar_index + 1, low, bgcolor=color.new(rejClr, 80), border_color=color.new(rejClr, 40), border_width=1)
+    label.new(bar_index, low, "🚫 Rej", style=label.style_none, textcolor=rejClr, size=size.tiny)
+
+if showRejB and bearRejection
+    box.new(bar_index, high, bar_index + 1, math.max(open, close), bgcolor=color.new(rejClr, 80), border_color=color.new(rejClr, 40), border_width=1)
+    label.new(bar_index, high, "🚫 Rej", style=label.style_none, textcolor=rejClr, size=size.tiny)
+
+// ═══════════════════ 12. MITIGATION ZONE ═══════════════════
+// When price returns to an unmitigated order block zone
+// Simplified: price returns to a previous OB level after moving away
+
+var float lastBullOBLow  = na
+var float lastBullOBHigh = na
+var float lastBearOBLow  = na
+var float lastBearOBHigh = na
+var bool  bullOBMitigated = true
+var bool  bearOBMitigated = true
+
+if bullOB
+    lastBullOBLow  := close[1]
+    lastBullOBHigh := open[1]
+    bullOBMitigated := false
+
+if bearOB
+    lastBearOBLow  := open[1]
+    lastBearOBHigh := close[1]
+    bearOBMitigated := false
+
+bullMitigHit = not bullOBMitigated and not na(lastBullOBLow) and low <= lastBullOBHigh and close > lastBullOBLow
+bearMitigHit = not bearOBMitigated and not na(lastBearOBHigh) and high >= lastBearOBLow and close < lastBearOBHigh
+
+if showMitig and bullMitigHit
+    label.new(bar_index, low, "🔄 Mitig", style=label.style_label_up, color=color.new(obBullClr, 30), textcolor=color.white, size=size.tiny)
+    bullOBMitigated := true
+
+if showMitig and bearMitigHit
+    label.new(bar_index, high, "🔄 Mitig", style=label.style_label_down, color=color.new(obBearClr, 30), textcolor=color.white, size=size.tiny)
+    bearOBMitigated := true
+
+// ═══════════════════ 13. INDUCEMENT ═══════════════════
+// Minor liquidity grab before the real move — traps retail traders
+// Detects when price takes out a recent swing high/low then reverses
+
+swingH5 = ta.highest(high, 5)
+swingL5 = ta.lowest(low, 5)
+
+induceBull = high > swingH5[1] and close < open and close < swingH5[1]  // Fake breakout above then close below
+induceBear = low < swingL5[1] and close > open and close > swingL5[1]   // Fake breakout below then close above
+
+if showInduce and induceBull
+    label.new(bar_index, high, "🪤 Induce", style=label.style_label_down, color=color.new(#FF9800, 30), textcolor=color.white, size=size.tiny)
+
+if showInduce and induceBear
+    label.new(bar_index, low, "🪤 Induce", style=label.style_label_up, color=color.new(#FF9800, 30), textcolor=color.white, size=size.tiny)
+
+// ═══════════════════ 14. INSTITUTIONAL FUNDING CANDLE (IFC) ═══════════════════
+// Aggressive large-body candle where institutions load positions
+// Body > 2× ATR with small wicks
+
+candleBody = math.abs(close - open)
+bullIFC = close > open and candleBody > atrVal * 2 and lowerWick < candleBody * 0.15 and upperWick < candleBody * 0.15
+bearIFC = close < open and candleBody > atrVal * 2 and lowerWick < candleBody * 0.15 and upperWick < candleBody * 0.15
+
+if showIFC and bullIFC
+    label.new(bar_index, low, "🏦 IFC", style=label.style_label_up, color=color.new(ifcClr, 20), textcolor=#000000, size=size.small)
+
+if showIFC and bearIFC
+    label.new(bar_index, high, "🏦 IFC", style=label.style_label_down, color=color.new(ifcClr, 20), textcolor=#000000, size=size.small)
+
+// ═══════════════════ 18. DISCOUNT & PREMIUM ZONES ═══════════════════
+// Based on recent swing range — Fibonacci equilibrium
+// Discount < 50% (buy zone), Premium > 50% (sell zone)
+
+dpLen = 50
+dpHigh = ta.highest(high, dpLen)
+dpLow  = ta.lowest(low, dpLen)
+dpMid  = (dpHigh + dpLow) / 2
+dp25   = dpLow + (dpHigh - dpLow) * 0.25   // Deep discount
+dp75   = dpLow + (dpHigh - dpLow) * 0.75   // Deep premium
+
+if showDPZones
+    // Equilibrium line
+    eqLine = line.new(bar_index - 1, dpMid, bar_index, dpMid, color=color.new(color.white, 60), style=line.style_dotted, width=1)
+    line.delete(eqLine[1])
+
+    // Discount zone fill (using horizontal lines)
+    discLine = line.new(bar_index - 1, dp25, bar_index, dp25, color=color.new(dpBullClr, 60), style=line.style_dotted, width=1)
+    line.delete(discLine[1])
+
+    // Premium zone fill
+    premLine = line.new(bar_index - 1, dp75, bar_index, dp75, color=color.new(dpBearClr, 60), style=line.style_dotted, width=1)
+    line.delete(premLine[1])
+
+// Discount/Premium label on current bar
+inDiscount = close < dpMid and showDPZones
+inPremium  = close > dpMid and showDPZones
+
+// ═══════════════════ 20. SMC — BOS / CHoCH ═══════════════════
+// Break of Structure (BOS): continuation — price breaks recent swing in trend direction
+// Change of Character (CHoCH): reversal — price breaks swing against trend
+
+var float lastSwingHigh = na
+var float lastSwingLow  = na
+var int   smcTrend      = 0
+
+smcPivH = ta.pivothigh(high, 5, 5)
+smcPivL = ta.pivotlow(low, 5, 5)
+
+if not na(smcPivH)
+    lastSwingHigh := smcPivH
+if not na(smcPivL)
+    lastSwingLow := smcPivL
+
+bosUp   = not na(lastSwingHigh) and close > lastSwingHigh and smcTrend >= 0
+chochUp = not na(lastSwingHigh) and close > lastSwingHigh and smcTrend < 0
+bosDn   = not na(lastSwingLow)  and close < lastSwingLow  and smcTrend <= 0
+chochDn = not na(lastSwingLow)  and close < lastSwingLow  and smcTrend > 0
+
+if bosUp
+    smcTrend := 1
+    if showBOS
+        label.new(bar_index, high, "BOS ▲", style=label.style_none, textcolor=bullColor, size=size.tiny)
+if chochUp
+    smcTrend := 1
+    if showBOS
+        label.new(bar_index, high, "CHoCH ▲", style=label.style_label_down, color=color.new(bullColor, 30), textcolor=color.white, size=size.tiny)
+if bosDn
+    smcTrend := -1
+    if showBOS
+        label.new(bar_index, low, "BOS ▼", style=label.style_none, textcolor=bearColor, size=size.tiny)
+if chochDn
+    smcTrend := -1
+    if showBOS
+        label.new(bar_index, low, "CHoCH ▼", style=label.style_label_up, color=color.new(bearColor, 30), textcolor=color.white, size=size.tiny)
+
+// ═══════════════════ 11. WYCKOFF PHASE DETECTION ═══════════════════
+// Simplified Wyckoff phases based on volume & price action
+// Accumulation: low volume + range-bound after downtrend
+// Distribution: low volume + range-bound after uptrend
+// Markup: increasing volume + uptrend
+// Markdown: increasing volume + downtrend
+
+vol20 = ta.sma(volume, 20)
+ema50 = ta.ema(close, 50)
+priceAboveEma = close > ema50
+volRising = volume > vol20 * 1.2
+rangeNarrow = (ta.highest(high, 15) - ta.lowest(low, 15)) < atrVal * 2
+
+wyckoffPhase = priceAboveEma and volRising ? "Markup" : not priceAboveEma and volRising ? "Markdown" : priceAboveEma and rangeNarrow ? "Distribution" : not priceAboveEma and rangeNarrow ? "Accumulation" : "—"
+
+// ═══════════════════ 19. RISK MANAGEMENT PANEL ═══════════════════
+if showRiskPanel and inTrade and not na(entryPrice) and not na(slPrice)
+    riskAmt = accountSize * (riskPercent / 100)
+    slDist  = math.abs(entryPrice - slPrice)
+    posSize = slDist > 0 ? riskAmt / slDist : 0
+    rrRatio = not na(tpPrice) and slDist > 0 ? math.abs(tpPrice - entryPrice) / slDist : 0
+
+    var table riskTable = table.new(position.bottom_right, 2, 5, bgcolor=color.new(#0a0b1e, 10), border_color=color.new(color.white, 80), border_width=1, frame_color=color.new(#6C5CE7, 50), frame_width=2)
+    table.cell(riskTable, 0, 0, "🛡️ Risk",   text_color=#AB47BC, text_size=size.small, bgcolor=color.new(#6C5CE7, 30))
+    table.cell(riskTable, 1, 0, "Value",      text_color=#AB47BC, text_size=size.small, bgcolor=color.new(#6C5CE7, 30))
+    table.cell(riskTable, 0, 1, "Risk $",     text_color=color.white, text_size=size.small)
+    table.cell(riskTable, 1, 1, str.tostring(riskAmt, "#.##"),       text_color=bearColor, text_size=size.small)
+    table.cell(riskTable, 0, 2, "Pos Size",   text_color=color.white, text_size=size.small)
+    table.cell(riskTable, 1, 2, str.tostring(posSize, "#.##"),       text_color=bullColor, text_size=size.small)
+    table.cell(riskTable, 0, 3, "R:R",        text_color=color.white, text_size=size.small)
+    table.cell(riskTable, 1, 3, str.tostring(rrRatio, "#.##") + ":1", text_color=rrRatio >= 2 ? bullColor : bearColor, text_size=size.small)
+    table.cell(riskTable, 0, 4, "Wyckoff",    text_color=color.white, text_size=size.small)
+    table.cell(riskTable, 1, 4, wyckoffPhase,  text_color=#00D2FF, text_size=size.small)
+
+// ═══════════════════ ALERTS ═══════════════════
+alertcondition(buySignal,       title="Buy Signal",       message="🟢 GS-AI: BUY on {{ticker}} @ {{close}}")
+alertcondition(sellSignal,      title="Sell Signal",      message="🔴 GS-AI: SELL on {{ticker}} @ {{close}}")
+alertcondition(bullFVG,         title="Bullish FVG",      message="🔵 GS-AI: Bullish FVG detected on {{ticker}}")
+alertcondition(bearFVG,         title="Bearish FVG",      message="🟠 GS-AI: Bearish FVG detected on {{ticker}}")
+alertcondition(isStrongBullFVG, title="Strong Bull FVG",  message="⚡ GS-AI: STRONG Bullish FVG on {{ticker}}")
+alertcondition(isStrongBearFVG, title="Strong Bear FVG",  message="⚡ GS-AI: STRONG Bearish FVG on {{ticker}}")
+alertcondition(tlSupBreak,      title="Support TL Break", message="🔻 GS-AI: Support Trendline BROKEN on {{ticker}}")
+alertcondition(tlResBreak,      title="Resist TL Break",  message="🔺 GS-AI: Resistance Trendline BROKEN on {{ticker}}")
+alertcondition(bullOB,          title="Bullish OB",       message="🟦 GS-AI: Bullish Order Block on {{ticker}}")
+alertcondition(bearOB,          title="Bearish OB",       message="🟥 GS-AI: Bearish Order Block on {{ticker}}")
+alertcondition(bullBreaker,     title="Bull Breaker",     message="⚡ GS-AI: Bullish Breaker Block on {{ticker}}")
+alertcondition(bearBreaker,     title="Bear Breaker",     message="⚡ GS-AI: Bearish Breaker Block on {{ticker}}")
+alertcondition(bullIFC,         title="Bull IFC",         message="🏦 GS-AI: Bullish Institutional Funding Candle on {{ticker}}")
+alertcondition(bearIFC,         title="Bear IFC",         message="🏦 GS-AI: Bearish Institutional Funding Candle on {{ticker}}")
+alertcondition(induceBull,      title="Bull Inducement",  message="🪤 GS-AI: Bullish Inducement on {{ticker}}")
+alertcondition(induceBear,      title="Bear Inducement",  message="🪤 GS-AI: Bearish Inducement on {{ticker}}")
+
+// Swift Algo X Alerts
+emaCrossUp  = ta.crossover(close, trendEMA)
+emaCrossDown = ta.crossunder(close, trendEMA)
+alertcondition(emaCrossUp,  title="EMA Trend Cross Up",  message="📈 Swift Algo X: Price crossed ABOVE Trend EMA on {{ticker}}")
+alertcondition(emaCrossDown, title="EMA Trend Cross Down", message="📉 Swift Algo X: Price crossed BELOW Trend EMA on {{ticker}}")
+
+// Range Filter Alerts
+alertcondition(rfLongCondition,  title="🔷 RF Buy Signal",  message="🔷 Range Filter: BUY on {{ticker}} @ {{close}}")
+alertcondition(rfShortCondition, title="🔷 RF Sell Signal", message="🔷 Range Filter: SELL on {{ticker}} @ {{close}}")
+

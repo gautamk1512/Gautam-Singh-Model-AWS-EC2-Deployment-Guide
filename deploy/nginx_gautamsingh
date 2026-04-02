@@ -1,0 +1,33 @@
+server {
+    listen 80;
+    server_name YOUR_EC2_PUBLIC_IP;  # Replace with your EC2 public IP or domain
+
+    # ─── Static & Media Files ───
+    location /static/ {
+        alias /home/ubuntu/Gautamsinghmodle/staticfiles/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location /media/ {
+        alias /home/ubuntu/Gautamsinghmodle/media/;
+        expires 7d;
+    }
+
+    # ─── Proxy to Gunicorn ───
+    location / {
+        proxy_pass http://unix:/home/ubuntu/Gautamsinghmodle/gunicorn.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 75s;
+        client_max_body_size 10M;
+    }
+
+    # ─── Security Headers ───
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+}

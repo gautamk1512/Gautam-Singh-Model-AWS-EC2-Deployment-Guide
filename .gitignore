@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+venv/
+env/
+
+# Database
+db.sqlite3
+*.sqlite3
+
+# Environment Variables (NEVER commit this!)
+.env
+
+# Static files (collected)
+staticfiles/
+
+# Media uploads
+media/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+gunicorn.sock
+gunicorn-error.log
+
+# Gemini/Zencoder
+.zencoder/
+.zenflow/
+.gemini/

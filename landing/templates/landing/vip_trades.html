@@ -1,0 +1,789 @@
+{% extends "landing/base.html" %}
+{% block title %}VIP Trades — Gautam Singh AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .trades-page {
+        padding: 80px 0 60px;
+    }
+
+    .trades-page .container {
+        max-width: 900px;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 48px;
+    }
+
+    .page-header h1 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .page-header .gradient-text {
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .page-header p {
+        color: var(--text2);
+        font-size: 1rem;
+    }
+
+    .section-label {
+        font-size: .8rem;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section-label.active {
+        color: var(--green);
+    }
+
+    .section-label.closed {
+        color: var(--muted);
+    }
+
+    .section-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+    }
+
+    .trade-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px 28px;
+        margin-bottom: 16px;
+        transition: all .4s;
+    }
+
+    .trade-card:hover {
+        border-color: rgba(0, 210, 255, 0.25);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 40px rgba(108, 92, 231, 0.1);
+    }
+
+    .trade-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .trade-pair {
+        font-size: 1.15rem;
+        font-weight: 700;
+    }
+
+    .trade-direction {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 14px;
+        border-radius: 100px;
+        font-size: .75rem;
+        font-weight: 700;
+        letter-spacing: .5px;
+    }
+
+    .trade-direction.buy {
+        background: rgba(0, 230, 118, 0.12);
+        border: 1px solid rgba(0, 230, 118, 0.3);
+        color: var(--green);
+    }
+
+    .trade-direction.sell {
+        background: rgba(255, 82, 82, 0.12);
+        border: 1px solid rgba(255, 82, 82, 0.3);
+        color: var(--red);
+    }
+
+    .trade-status {
+        padding: 4px 14px;
+        border-radius: 100px;
+        font-size: .75rem;
+        font-weight: 700;
+    }
+
+    .trade-status.active {
+        background: rgba(0, 210, 255, 0.12);
+        border: 1px solid rgba(0, 210, 255, 0.3);
+        color: var(--blue);
+    }
+
+    .trade-status.tp_hit {
+        background: rgba(0, 230, 118, 0.12);
+        border: 1px solid rgba(0, 230, 118, 0.3);
+        color: var(--green);
+    }
+
+    .trade-status.sl_hit {
+        background: rgba(255, 82, 82, 0.12);
+        border: 1px solid rgba(255, 82, 82, 0.3);
+        color: var(--red);
+    }
+
+    .trade-status.closed {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--muted);
+    }
+
+    .trade-levels {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+    .level-box {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 12px;
+        padding: 12px 14px;
+        text-align: center;
+    }
+
+    .level-label {
+        font-size: .7rem;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 4px;
+    }
+
+    .level-value {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .level-box.entry .level-value {
+        color: var(--blue);
+    }
+
+    .level-box.sl .level-value {
+        color: var(--red);
+    }
+
+    .level-box.tp .level-value {
+        color: var(--green);
+    }
+
+    .trade-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .trade-time {
+        font-size: .8rem;
+        color: var(--muted);
+    }
+
+    .trade-pnl {
+        font-size: .85rem;
+        font-weight: 700;
+    }
+
+    .trade-pnl.positive {
+        color: var(--green);
+    }
+
+    .trade-pnl.negative {
+        color: var(--red);
+    }
+
+    .trade-notes {
+        font-size: .85rem;
+        color: var(--text2);
+        margin-top: 8px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--muted);
+    }
+
+    .empty-state svg {
+        margin-bottom: 16px;
+        opacity: .4;
+    }
+
+    .empty-state h3 {
+        font-size: 1.2rem;
+        color: var(--text2);
+        margin-bottom: 8px;
+    }
+
+    /* How to get VIP */
+    .vip-info {
+        margin-bottom: 48px;
+    }
+
+    .vip-info-title {
+        font-size: 1.3rem;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .vip-info-title .gradient-text {
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .vip-steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .vip-step {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px 20px;
+        text-align: center;
+        position: relative;
+        transition: all .4s;
+    }
+
+    .vip-step:hover {
+        border-color: rgba(0, 210, 255, 0.25);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(108, 92, 231, 0.12);
+    }
+
+    .step-number {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--grad);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1rem;
+        margin-bottom: 14px;
+    }
+
+    .vip-step h3 {
+        font-size: .95rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .vip-step p {
+        font-size: .82rem;
+        color: var(--text2);
+        line-height: 1.5;
+    }
+
+    .vip-note {
+        text-align: center;
+        margin-top: 20px;
+        padding: 16px 20px;
+        background: rgba(108, 92, 231, 0.08);
+        border: 1px solid rgba(108, 92, 231, 0.2);
+        border-radius: 12px;
+        font-size: .85rem;
+        color: var(--text2);
+    }
+
+    .vip-note strong {
+        color: var(--blue);
+    }
+
+    /* Access Code Form */
+    .code-entry {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 40px 32px;
+        text-align: center;
+        margin-bottom: 40px;
+    }
+
+    .code-entry h2 {
+        font-size: 1.4rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .code-entry p {
+        color: var(--text2);
+        font-size: .9rem;
+        margin-bottom: 24px;
+    }
+
+    .code-form {
+        display: flex;
+        gap: 12px;
+        max-width: 480px;
+        margin: 0 auto;
+    }
+
+    .code-form input {
+        flex: 1;
+        padding: 14px 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text);
+        font-family: 'Courier New', monospace;
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        text-align: center;
+        outline: none;
+        transition: border-color .3s;
+    }
+
+    .code-form input:focus {
+        border-color: var(--purple);
+        box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.15);
+    }
+
+    .code-form input::placeholder {
+        letter-spacing: 1px;
+        text-transform: none;
+        font-family: 'Inter', sans-serif;
+        font-weight: 400;
+        color: var(--muted);
+    }
+
+    .code-form button {
+        padding: 14px 28px;
+        border: none;
+        border-radius: 12px;
+        background: var(--grad);
+        color: #fff;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: .95rem;
+        cursor: pointer;
+        transition: all .3s;
+        white-space: nowrap;
+    }
+
+    .code-form button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    /* VIP Status Bar */
+    .vip-status-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--card);
+        border: 1px solid rgba(0, 230, 118, 0.2);
+        border-radius: 12px;
+        padding: 16px 24px;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .vip-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: .8rem;
+        font-weight: 700;
+        padding: 6px 14px;
+        border-radius: 8px;
+        background: rgba(0, 230, 118, 0.1);
+        border: 1px solid rgba(0, 230, 118, 0.3);
+        color: var(--green);
+    }
+
+    .vip-expiry {
+        font-size: .85rem;
+        color: var(--text2);
+    }
+
+    .vip-expiry strong {
+        color: var(--blue);
+    }
+
+    /* Locked trades overlay */
+    .trades-locked {
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 40px;
+    }
+
+    .trades-locked .locked-blur {
+        filter: blur(8px);
+        user-select: none;
+        pointer-events: none;
+        opacity: .5;
+    }
+
+    .locked-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: rgba(6, 7, 27, 0.6);
+        border-radius: 16px;
+        z-index: 10;
+    }
+
+    .locked-overlay .lock-icon {
+        font-size: 3rem;
+        margin-bottom: 12px;
+    }
+
+    .locked-overlay h3 {
+        font-size: 1.3rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .locked-overlay p {
+        color: var(--text2);
+        font-size: .9rem;
+        margin-bottom: 20px;
+    }
+
+    .btn-subscribe {
+        display: inline-block;
+        padding: 12px 28px;
+        border-radius: 12px;
+        background: var(--grad);
+        color: #fff;
+        font-weight: 700;
+        font-size: .95rem;
+        transition: all .3s;
+        text-decoration: none;
+    }
+
+    .btn-subscribe:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    /* Copy protection on trade content */
+    .protected-content {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    .protected-content::selection {
+        background: transparent;
+    }
+
+    .protected-content *::selection {
+        background: transparent;
+    }
+
+    @media (max-width: 600px) {
+        .trade-levels {
+            grid-template-columns: 1fr;
+        }
+        .vip-steps {
+            grid-template-columns: 1fr;
+        }
+        .code-form {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="trades-page">
+    <div class="container">
+        <div class="page-header">
+            <h1><span class="gradient-text">VIP Trades</span></h1>
+            <p>Get exclusive trade signals from our VIP group</p>
+        </div>
+
+        <!-- How to get VIP Trades -->
+        <div class="vip-info">
+            <h2 class="vip-info-title">How can you take <span class="gradient-text">VIP Trade</span>?</h2>
+            <div class="vip-steps">
+                <div class="vip-step">
+                    <div class="step-number">1</div>
+                    <h3>Create an Account</h3>
+                    <p>You should have an account with us through our referral link, or sign up directly on our platform.</p>
+                </div>
+                <div class="vip-step">
+                    <div class="step-number">2</div>
+                    <h3>Verification</h3>
+                    <p>Once registered, we will verify your account and referral details to confirm your eligibility.</p>
+                </div>
+                <div class="vip-step">
+                    <div class="step-number">3</div>
+                    <h3>Access VIP Trades</h3>
+                    <p>After successful verification, you will get access to all the exclusive trades from our VIP Group.</p>
+                </div>
+            </div>
+            <div class="vip-note">
+                💡 <strong>Note:</strong> VIP Trade access is granted only after account verification. Make sure your referral is confirmed before applying.
+            </div>
+        </div>
+
+        {% if has_vip_access %}
+        <!-- ═══════ VIP ACCESS ACTIVE — SHOW TRADES ═══════ -->
+        <div class="vip-status-bar">
+            <span class="vip-badge">● VIP Access Active</span>
+            <span class="vip-expiry"><strong>{{ vip_days_left }}</strong> days remaining</span>
+        </div>
+
+        <div class="protected-content" id="protectedTrades">
+            <!-- Active Trades -->
+            <div class="section-label active">🟢 Active Trades</div>
+            {% if active_trades %}
+                {% for t in active_trades %}
+                <div class="trade-card">
+                    <div class="trade-top">
+                        <span class="trade-pair">{{ t.pair }}</span>
+                        <div>
+                            <span class="trade-direction {{ t.direction }}">{{ t.get_direction_display|upper }}</span>
+                            <span class="trade-status active">Active</span>
+                        </div>
+                    </div>
+                    <div class="trade-levels">
+                        <div class="level-box entry">
+                            <div class="level-label">Entry</div>
+                            <div class="level-value">{{ t.entry_price }}</div>
+                        </div>
+                        <div class="level-box sl">
+                            <div class="level-label">Stop Loss</div>
+                            <div class="level-value">{{ t.stop_loss }}</div>
+                        </div>
+                        <div class="level-box tp">
+                            <div class="level-label">Take Profit</div>
+                            <div class="level-value">{{ t.take_profit }}</div>
+                        </div>
+                    </div>
+                    <div class="trade-footer">
+                        <span class="trade-time">{{ t.published_at|date:"d M Y, h:i A" }}</span>
+                    </div>
+                    {% if t.notes %}
+                    <div class="trade-notes">{{ t.notes }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state" style="padding: 40px 20px;">
+                    <p>No active trades right now. Stay tuned!</p>
+                </div>
+            {% endif %}
+
+            <!-- Closed Trades -->
+            <div class="section-label closed" style="margin-top: 40px;">📋 Trade History</div>
+            {% if closed_trades %}
+                {% for t in closed_trades %}
+                <div class="trade-card">
+                    <div class="trade-top">
+                        <span class="trade-pair">{{ t.pair }}</span>
+                        <div>
+                            <span class="trade-direction {{ t.direction }}">{{ t.get_direction_display|upper }}</span>
+                            <span class="trade-status {{ t.status }}">{{ t.get_status_display }}</span>
+                        </div>
+                    </div>
+                    <div class="trade-levels">
+                        <div class="level-box entry">
+                            <div class="level-label">Entry</div>
+                            <div class="level-value">{{ t.entry_price }}</div>
+                        </div>
+                        <div class="level-box sl">
+                            <div class="level-label">Stop Loss</div>
+                            <div class="level-value">{{ t.stop_loss }}</div>
+                        </div>
+                        <div class="level-box tp">
+                            <div class="level-label">Take Profit</div>
+                            <div class="level-value">{{ t.take_profit }}</div>
+                        </div>
+                    </div>
+                    <div class="trade-footer">
+                        <span class="trade-time">{{ t.published_at|date:"d M Y, h:i A" }}</span>
+                        {% if t.pnl_pips is not None %}
+                            {% if t.pnl_pips > 0 %}
+                                <span class="trade-pnl positive">+{{ t.pnl_pips }} pips</span>
+                            {% else %}
+                                <span class="trade-pnl negative">{{ t.pnl_pips }} pips</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    {% if t.notes %}
+                    <div class="trade-notes">{{ t.notes }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state" style="padding: 40px 20px;">
+                    <p>No trade history yet.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        {% else %}
+        <!-- ═══════ NO VIP ACCESS — SHOW CODE ENTRY + LOCKED STATE ═══════ -->
+
+        {% if user.is_authenticated %}
+        <!-- Access Code Entry -->
+        <div class="code-entry">
+            <h2>🔑 Enter Your VIP Access Code</h2>
+            <p>Got an access code after verification? Enter it below to unlock 30 days of VIP trade signals.</p>
+            <form class="code-form" method="POST" action="{% url 'redeem_vip_code' %}">
+                {% csrf_token %}
+                <input type="text" name="vip_code" placeholder="Enter your code" maxlength="20" required autocomplete="off">
+                <button type="submit">Activate</button>
+            </form>
+        </div>
+        {% else %}
+        <!-- Not logged in -->
+        <div class="code-entry">
+            <h2>🔒 Login Required</h2>
+            <p>Please login or register to enter your VIP access code and unlock exclusive trades.</p>
+            <a href="{% url 'login' %}" class="btn-subscribe" style="margin-right: 12px;">Login</a>
+            <a href="{% url 'register' %}" class="btn-subscribe">Register</a>
+        </div>
+        {% endif %}
+
+        <!-- Locked Trades Preview -->
+        <div class="trades-locked">
+            <div class="locked-blur">
+                <div class="section-label active">🟢 Active Trades</div>
+                <div class="trade-card">
+                    <div class="trade-top">
+                        <span class="trade-pair">XXX/XXX</span>
+                        <div>
+                            <span class="trade-direction buy">BUY</span>
+                            <span class="trade-status active">Active</span>
+                        </div>
+                    </div>
+                    <div class="trade-levels">
+                        <div class="level-box entry">
+                            <div class="level-label">Entry</div>
+                            <div class="level-value">X.XXXXX</div>
+                        </div>
+                        <div class="level-box sl">
+                            <div class="level-label">Stop Loss</div>
+                            <div class="level-value">X.XXXXX</div>
+                        </div>
+                        <div class="level-box tp">
+                            <div class="level-label">Take Profit</div>
+                            <div class="level-value">X.XXXXX</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="trade-card">
+                    <div class="trade-top">
+                        <span class="trade-pair">XXX/XXX</span>
+                        <div>
+                            <span class="trade-direction sell">SELL</span>
+                            <span class="trade-status active">Active</span>
+                        </div>
+                    </div>
+                    <div class="trade-levels">
+                        <div class="level-box entry">
+                            <div class="level-label">Entry</div>
+                            <div class="level-value">X.XXXXX</div>
+                        </div>
+                        <div class="level-box sl">
+                            <div class="level-label">Stop Loss</div>
+                            <div class="level-value">X.XXXXX</div>
+                        </div>
+                        <div class="level-box tp">
+                            <div class="level-label">Take Profit</div>
+                            <div class="level-value">X.XXXXX</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="locked-overlay">
+                <div class="lock-icon">🔐</div>
+                <h3>Trades Locked</h3>
+                <p>Enter your VIP access code or visit our store to get an indicator for VIP access</p>
+                <a href="{% url 'store' %}" class="btn-subscribe">Visit Store →</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Copy Protection Script -->
+<script>
+(function() {
+    const protectedArea = document.getElementById('protectedTrades');
+    if (!protectedArea) return;
+
+    // Disable right-click on protected content
+    protectedArea.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // Disable text selection via mouse
+    protectedArea.addEventListener('selectstart', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // Disable drag
+    protectedArea.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        return false;
+    });
+
+    // Block copy/select-all/view-source/dev-tools keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+C, Ctrl+A, Ctrl+U
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'a' || e.key === 'u' || e.key === 'C' || e.key === 'A' || e.key === 'U')) {
+            if (protectedArea.contains(document.activeElement) || window.getSelection().toString().length > 0) {
+                e.preventDefault();
+                return false;
+            }
+        }
+        // F12
+        if (e.key === 'F12') {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+Shift+I (DevTools)
+        if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+            e.preventDefault();
+            return false;
+        }
+        // Ctrl+Shift+J (Console)
+        if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+})();
+</script>
+{% endblock %}

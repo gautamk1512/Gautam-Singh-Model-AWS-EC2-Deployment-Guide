@@ -1,0 +1,20 @@
+[Unit]
+Description=Gunicorn daemon for Gautam Singh Model
+After=network.target
+
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/Gautamsinghmodle
+EnvironmentFile=/home/ubuntu/Gautamsinghmodle/.env
+ExecStart=/home/ubuntu/Gautamsinghmodle/venv/bin/gunicorn \
+    --access-logfile - \
+    --error-logfile /home/ubuntu/Gautamsinghmodle/gunicorn-error.log \
+    --workers 3 \
+    --bind unix:/home/ubuntu/Gautamsinghmodle/gunicorn.sock \
+    gowthamsingh.wsgi:application
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
