@@ -1,0 +1,198 @@
+{% extends 'landing/base.html' %}
+{% load static %}
+
+{% block title %}{{ stream.title }} | Live Stream{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stream-container {
+        max-width: 1400px;
+        margin: 40px auto;
+        padding: 0 24px;
+        display: flex;
+        gap: 24px;
+        align-items: flex-start;
+    }
+    
+    .player-section {
+        flex: 1;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .video-wrapper {
+        position: relative;
+        padding-bottom: 56.25%; /* 16:9 ratio */
+        height: 0;
+        background: #000;
+    }
+    
+    .video-wrapper iframe {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        border: none;
+    }
+
+    .chat-section {
+        width: 350px;
+        height: 600px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-section iframe {
+        flex: 1;
+        width: 100%;
+        border: none;
+    }
+
+    .stream-header {
+        padding: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        border-bottom: 1px solid var(--border);
+    }
+    
+    .stream-title h1 {
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .live-indicator {
+        background: var(--red);
+        color: #fff;
+        font-size: .7rem;
+        padding: 4px 8px;
+        border-radius: 4px;
+        animation: pulse 2s infinite;
+    }
+
+    .host-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--text2);
+        font-size: .9rem;
+    }
+    
+    .host-avatar {
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        background: var(--grad);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        color: #fff;
+    }
+
+    .stream-desc {
+        padding: 24px;
+        color: var(--text2);
+        font-size: .95rem;
+        line-height: 1.6;
+    }
+
+    .end-stream-btn {
+        background: rgba(255, 82, 82, 0.1);
+        border: 1px solid rgba(255, 82, 82, 0.3);
+        color: var(--red);
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all .3s;
+    }
+    .end-stream-btn:hover {
+        background: var(--red);
+        color: #fff;
+    }
+
+    @media (max-width: 1024px) {
+        .stream-container {
+            flex-direction: column;
+        }
+        .chat-section {
+            width: 100%;
+            height: 500px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="padding: 20px 24px 0;">
+    <a href="{% url 'live_hub' %}" style="color: var(--blue); font-weight: 600; font-size: .9rem;">← Back to Hub</a>
+</div>
+
+<div class="stream-container">
+    <div class="player-section">
+        {% if stream.platform == 'youtube' and youtube_id %}
+            <div class="video-wrapper">
+                <iframe src="https://www.youtube.com/embed/{{ youtube_id }}?autoplay=1" allow="autoplay; encrypted-media" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+            </div>
+        {% elif stream.platform == 'instagram' %}
+            <div style="padding: 100px 20px; text-align: center; background: #0a0b20;">
+                <h2 style="margin-bottom: 24px;">Instagram Live</h2>
+                <p style="color: var(--muted); margin-bottom: 32px;">Click below to watch the stream on Instagram.</p>
+                <a href="{{ stream.stream_url }}" target="_blank" style="background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); padding: 16px 32px; border-radius: 100px; font-weight: 700; color: #fff; font-size: 1.1rem; display: inline-block;">Watch on Instagram</a>
+            </div>
+        {% else %}
+            <div style="padding: 100px 20px; text-align: center; background: #0a0b20;">
+                <p style="color: var(--muted); margin-bottom: 32px;">Stream available at external link.</p>
+                <a href="{{ stream.stream_url }}" target="_blank" class="end-stream-btn" style="color: var(--blue); border-color: var(--blue); background: rgba(0, 210, 255, 0.1);">Open Stream</a>
+            </div>
+        {% endif %}
+
+        <div class="stream-header">
+            <div>
+                <div class="stream-title">
+                    <h1>{{ stream.title }}</h1>
+                    {% if stream.is_live %}<span class="live-indicator">LIVE</span>{% endif %}
+                </div>
+                <div class="host-info">
+                    <div class="host-avatar">{{ stream.host.username|make_list|first|upper }}</div>
+                    <span>{{ stream.host.username }}</span>
+                    <span>•</span>
+                    <span>Started {{ stream.started_at|timesince }} ago</span>
+                </div>
+            </div>
+            
+            {% if is_host and stream.is_live %}
+            <form method="POST" action="{% url 'stop_stream' stream.id %}" onsubmit="return confirm('Are you sure you want to end this stream?');">
+                {% csrf_token %}
+                <button type="submit" class="end-stream-btn">End Stream</button>
+            </form>
+            {% endif %}
+        </div>
+
+        {% if stream.description %}
+        <div class="stream-desc">
+            {{ stream.description|linebreaks }}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Live Chat Section for YouTube -->
+    {% if stream.platform == 'youtube' and youtube_id and stream.is_live %}
+    <div class="chat-section">
+        <!-- Note: YouTube requires the parent domain to be passed. We use window.location.hostname in JS, but here we can just pass the generic one or leave it blank if testing. -->
+        <!-- For local testing, passing localhost is often restricted, but this format works in production. -->
+        <script>
+            document.write('<iframe src="https://www.youtube.com/live_chat?v={{ youtube_id }}&embed_domain=' + window.location.hostname + '" referrerpolicy="strict-origin-when-cross-origin"></iframe>');
+        </script>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

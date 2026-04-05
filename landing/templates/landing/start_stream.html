@@ -1,0 +1,61 @@
+{% extends 'landing/base.html' %}
+
+{% block title %}Start Live Stream | Gautam Singh AI{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="container" style="max-width: 600px;">
+        <div class="auth-card">
+            <h1>Start a Broadcast</h1>
+            <p class="subtitle">Enter your stream details below</p>
+
+            <form method="POST" action="{% url 'start_stream' %}" novalidate>
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    {{ form.non_field_errors }}
+                    <label for="{{ form.title.id_for_label }}">Stream Title</label>
+                    {{ form.title }}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.description.id_for_label }}">Description</label>
+                    {{ form.description }}
+                </div>
+                
+                <div style="display: flex; gap: 16px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label for="{{ form.platform.id_for_label }}">Platform</label>
+                        {{ form.platform }}
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label for="{{ form.stream_url.id_for_label }}">Stream URL</label>
+                        {{ form.stream_url }}
+                        {% if form.stream_url.errors %}
+                            <div style="color: var(--red); font-size: 0.8rem; margin-top: 4px; font-weight: 600;">
+                                {{ form.stream_url.errors|striptags }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div style="margin-top: 10px; margin-bottom: 24px; padding: 16px; background: rgba(0,210,255,0.05); border: 1px solid rgba(0,210,255,0.2); border-radius: 8px; font-size: .85rem; color: var(--text2); line-height: 1.6;">
+                    <strong style="color: var(--blue);">💡 How to go Live on YouTube:</strong>
+                    <ol style="margin-left: 20px; margin-top: 8px;">
+                        <li>Put your <strong>RTMP Stream URL</strong> (rtmp://a.rtmp.youtube.com/live2) and <strong>Stream Key</strong> into your broadcasting software (like OBS Studio).</li>
+                        <li>Start streaming from OBS to YouTube.</li>
+                        <li>Copy the <strong>public YouTube Video Link</strong> (e.g., <code>https://www.youtube.com/watch?v=...</code>) from YouTube Studio.</li>
+                        <li>Paste that exact Video Link into the <strong>Stream URL</strong> field above so we can embed your video and live chat!</li>
+                    </ol>
+                </div>
+
+                <button type="submit" class="btn-submit">Start Streaming 🔴</button>
+            </form>
+            
+            <div class="auth-footer">
+                <a href="{% url 'live_hub' %}">← Back to Hub</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

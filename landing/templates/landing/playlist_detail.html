@@ -1,0 +1,56 @@
+{% extends 'landing/base.html' %}
+
+{% block title %}{{ playlist.title }} | Gautam Singh AI{% endblock %}
+
+{% block content %}
+<section class="store-section" style="padding-top: 120px;">
+    <div class="container">
+        <a href="{% url 'playlist_list' %}" style="display: inline-block; margin-bottom: 24px; color: var(--blue); text-decoration: none; font-weight: 600;">← Back to Playlists</a>
+        
+        <div class="store-header" style="text-align: left; margin-bottom: 40px; display: flex; gap: 30px; align-items: flex-start; background: var(--card); padding: 30px; border-radius: 16px; border: 1px solid var(--border);">
+            {% if playlist.thumbnail_url %}
+                <img src="{{ playlist.thumbnail_url }}" alt="{{ playlist.title }}" style="width: 300px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            {% endif %}
+            <div>
+                <span class="section-badge" style="margin: 0; margin-bottom: 15px; display: inline-block;">SERIES</span>
+                <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 16px; line-height: 1.2;">{{ playlist.title }}</h1>
+                <p style="color: var(--text2); line-height: 1.6; font-size: 1rem;">{{ playlist.description|linebreaksbr }}</p>
+                <div style="margin-top: 20px; font-size: 0.9rem; color: #fff; font-weight: 600; background: rgba(108, 92, 231, 0.2); padding: 8px 16px; border-radius: 20px; display: inline-block; border: 1px solid rgba(108, 92, 231, 0.4);">
+                    {{ videos.count }} Videos
+                </div>
+            </div>
+        </div>
+
+        <h2 style="font-size: 1.8rem; margin-bottom: 30px;">Episodes</h2>
+
+        <div class="pricing-grid">
+            {% for video in videos %}
+            <a href="{% url 'video_detail' video.video_id %}" class="pricing-card reveal" style="text-decoration: none; padding: 0; overflow: hidden; display: flex; flex-direction: column; --delay: {{ forloop.counter0|add:0.1 }}s">
+                <div style="position: relative; padding-top: 56.25%;">
+                    {% if video.thumbnail_url %}
+                        <img src="{{ video.thumbnail_url }}" alt="{{ video.title }}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;">
+                    {% endif %}
+                    {% if video.duration %}
+                    <div style="position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                        {{ video.duration|cut:"PT"|lower }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div style="padding: 20px; flex-grow: 1; display: flex; flex-direction: column;">
+                    <div style="color: var(--blue); font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px;">Episode {{ forloop.counter }}</div>
+                    <h3 style="font-size: 1.1rem; font-weight: 600; color: #fff; margin-bottom: 8px; line-height: 1.4;">{{ video.title }}</h3>
+                    <div style="margin-top: auto; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: var(--text2);">
+                        <span>{{ video.view_count }} views</span>
+                        <span>{{ video.published_at|timesince }} ago</span>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div style="text-align: center; grid-column: 1 / -1; padding: 50px;">
+                <p style="color: var(--text2); font-size: 1.2rem;">No videos mapped to this series yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}
