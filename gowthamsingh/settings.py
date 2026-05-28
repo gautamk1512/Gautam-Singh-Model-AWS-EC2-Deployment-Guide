@@ -131,8 +131,8 @@ AUTHENTICATION_BACKENDS = [
 
 # ─── Allauth ───
 ACCOUNT_LOGIN_ON_SIGNUP = True
-ACCOUNT_AUTHENTICATION_METHOD = "username_email"
-ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_LOGIN_METHODS = {"email", "username"}          # replaces deprecated ACCOUNT_AUTHENTICATION_METHOD
+ACCOUNT_SIGNUP_FIELDS = ["email*", "username*", "password1*", "password2*"]  # replaces deprecated ACCOUNT_EMAIL_REQUIRED
 ACCOUNT_EMAIL_VERIFICATION = "none"
 SOCIALACCOUNT_LOGIN_ON_GET = True
 SOCIALACCOUNT_AUTO_SIGNUP = True
@@ -142,20 +142,43 @@ SOCIALACCOUNT_PROVIDERS = {
         "SCOPE": ["profile", "email"],
         "AUTH_PARAMS": {"access_type": "online"},
         "APP": {
-            "client_id": os.environ.get("GOOGLE_CLIENT_ID", "REPLACE_WITH_YOUR_GOOGLE_CLIENT_ID"),
-            "secret": os.environ.get("GOOGLE_CLIENT_SECRET", "REPLACE_WITH_YOUR_GOOGLE_CLIENT_SECRET"),
+            "client_id": os.environ.get("GOOGLE_CLIENT_ID", ""),
+            "secret": os.environ.get("GOOGLE_CLIENT_SECRET", ""),
             "key": "",
         },
     }
 }
 
-# ─── Demo Mode (bypasses Razorpay — set to False for production) ───
-DEMO_MODE = os.environ.get("DEMO_MODE", "True").lower() == "true"
+# ─── Demo Mode ───
+# Set DEMO_MODE=True  → Payment is bypassed (for testing, no real money)
+# Set DEMO_MODE=False → Real Razorpay LIVE payment is used
+DEMO_MODE = os.environ.get("DEMO_MODE", "False").lower() == "true"  # LIVE MODE — real payments active
 
-# ─── Razorpay ───
-RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_REPLACE_WITH_YOUR_KEY")
-RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "REPLACE_WITH_YOUR_SECRET")
+# ─── Razorpay Keys ───
+# HOW TO GET KEYS:
+#   1. Go to https://dashboard.razorpay.com
+#   2. Login → Settings → API Keys → Generate Key
+#   3. Copy Key ID and Key Secret
+#   4. For TEST mode keys start with: rzp_test_XXXX
+#   5. For LIVE mode keys start with: rzp_live_XXXX
+#
+# Set these via environment variables OR replace the fallback strings below:
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_live_B2EmEyw89Cfll5")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "4KzIo4bQRnkYFPmwPz36de0x")
 RAZORPAY_WEBHOOK_SECRET = os.environ.get("RAZORPAY_WEBHOOK_SECRET", "REPLACE_WITH_YOUR_WEBHOOK_SECRET")
+
+# ─── Razorpay Key Validation ───
+_rzp_key = RAZORPAY_KEY_ID
+if not DEMO_MODE and ("REPLACE_WITH" in _rzp_key or not _rzp_key.startswith(("rzp_test_", "rzp_live_"))):
+    import warnings
+    warnings.warn(
+        "\n\n🚨 PAYMENT GATEWAY ERROR: Razorpay keys are not configured!\n"
+        "   RAZORPAY_KEY_ID is still a placeholder.\n"
+        "   Go to https://dashboard.razorpay.com → Settings → API Keys\n"
+        "   Then set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in your environment.\n"
+        "   OR set DEMO_MODE=True to test without real payments.\n",
+        stacklevel=2,
+    )
 
 # ─── Production Security ───
 if IS_PRODUCTION:

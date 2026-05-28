@@ -1,0 +1,1331 @@
+{% extends "landing/base.html" %}
+{% block title %}Support Center — Gautam Singh AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ══════════ SUPPORT PAGE ══════════ */
+    .support-page {
+        padding: 60px 0 80px;
+        min-height: calc(100vh - 64px);
+    }
+
+    .support-page .container {
+        max-width: 1100px;
+    }
+
+    /* ── Hero Header ── */
+    .support-hero {
+        text-align: center;
+        margin-bottom: 60px;
+        position: relative;
+    }
+
+    .support-hero::before {
+        content: '';
+        position: absolute;
+        top: -120px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 600px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(108, 92, 231, 0.12) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+    }
+
+    .support-hero .section-badge {
+        display: inline-block;
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        padding: 7px 18px;
+        border-radius: 100px;
+        background: rgba(108, 92, 231, 0.12);
+        border: 1px solid rgba(108, 92, 231, 0.25);
+        color: var(--purple);
+        margin-bottom: 18px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .support-hero h1 {
+        font-size: 2.8rem;
+        font-weight: 900;
+        margin-bottom: 10px;
+        line-height: 1.12;
+        position: relative;
+        z-index: 1;
+    }
+
+    .gradient-text {
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    .support-hero p {
+        color: var(--text2);
+        font-size: 1.08rem;
+        max-width: 520px;
+        margin: 0 auto;
+        position: relative;
+        z-index: 1;
+    }
+
+    /* ── Floating Orb Animations ── */
+    .orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
+        opacity: 0.25;
+        pointer-events: none;
+        animation: orbFloat 8s ease-in-out infinite alternate;
+    }
+
+    .orb-1 {
+        width: 200px; height: 200px;
+        background: var(--purple);
+        top: -40px; left: -80px;
+        animation-delay: 0s;
+    }
+
+    .orb-2 {
+        width: 160px; height: 160px;
+        background: var(--blue);
+        bottom: -60px; right: -60px;
+        animation-delay: 3s;
+    }
+
+    @keyframes orbFloat {
+        0% { transform: translate(0, 0); }
+        100% { transform: translate(20px, -20px); }
+    }
+
+    /* ── Category Grid ── */
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+        margin-bottom: 56px;
+    }
+
+    .category-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 36px 30px 30px;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.45s cubic-bezier(.25, .46, .45, .94);
+    }
+
+    .category-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--grad);
+        opacity: 0;
+        transition: opacity 0.4s;
+    }
+
+    .category-card:hover {
+        border-color: rgba(0, 210, 255, 0.3);
+        transform: translateY(-6px);
+        box-shadow: 0 24px 60px rgba(108, 92, 231, 0.15);
+    }
+
+    .category-card:hover::before {
+        opacity: 1;
+    }
+
+    .category-card.active {
+        border-color: var(--purple);
+        background: linear-gradient(175deg, rgba(108, 92, 231, 0.1), var(--card) 50%);
+        box-shadow: 0 16px 48px rgba(108, 92, 231, 0.12);
+    }
+
+    .category-card.active::before {
+        opacity: 1;
+    }
+
+    .card-icon-wrap {
+        width: 52px;
+        height: 52px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 18px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-icon-wrap.purple { background: linear-gradient(135deg, #6C5CE7, #8B7CF7); }
+    .card-icon-wrap.cyan { background: linear-gradient(135deg, #00D2FF, #00B4D8); }
+    .card-icon-wrap.emerald { background: linear-gradient(135deg, #00E676, #00C853); }
+    .card-icon-wrap.amber { background: linear-gradient(135deg, #FFB300, #FF8F00); }
+
+    .card-icon-wrap::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.18), transparent);
+    }
+
+    .card-icon-wrap svg {
+        position: relative;
+        z-index: 1;
+    }
+
+    .category-card h3 {
+        font-size: 1.2rem;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .category-card .card-desc {
+        font-size: .85rem;
+        color: var(--text2);
+        line-height: 1.55;
+        margin-bottom: 14px;
+    }
+
+    .card-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        padding: 4px 12px;
+        border-radius: 100px;
+    }
+
+    .card-tag.ai {
+        background: rgba(108, 92, 231, 0.12);
+        border: 1px solid rgba(108, 92, 231, 0.3);
+        color: var(--purple);
+    }
+
+    .card-tag.human {
+        background: rgba(0, 210, 255, 0.1);
+        border: 1px solid rgba(0, 210, 255, 0.25);
+        color: var(--blue);
+    }
+
+    .card-tag.payment {
+        background: rgba(0, 230, 118, 0.08);
+        border: 1px solid rgba(0, 230, 118, 0.25);
+        color: var(--green);
+    }
+
+    .card-tag.general {
+        background: rgba(255, 179, 0, 0.08);
+        border: 1px solid rgba(255, 179, 0, 0.25);
+        color: #FFB300;
+    }
+
+    .card-tag .pulse-dot {
+        width: 6px;
+        height: 6px;
+        background: currentColor;
+        border-radius: 50%;
+        animation: pulseDot 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulseDot {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* ── Panels ── */
+    .support-panel {
+        display: none;
+        animation: panelFadeIn 0.5s ease-out;
+    }
+
+    .support-panel.active {
+        display: block;
+    }
+
+    @keyframes panelFadeIn {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── AI Chat Panel ── */
+    .ai-chat-section {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        overflow: hidden;
+        backdrop-filter: blur(20px);
+    }
+
+    .chat-header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 22px 28px;
+        border-bottom: 1px solid var(--border);
+        background: rgba(108, 92, 231, 0.04);
+    }
+
+    .chat-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        background: var(--grad);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        position: relative;
+    }
+
+    .chat-avatar .online-dot {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 12px;
+        height: 12px;
+        background: var(--green);
+        border: 2px solid var(--bg2);
+        border-radius: 50%;
+    }
+
+    .chat-header-info h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 1px;
+    }
+
+    .chat-header-info span {
+        font-size: .75rem;
+        color: var(--green);
+        font-weight: 600;
+    }
+
+    .chat-messages {
+        height: 400px;
+        overflow-y: auto;
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .chat-messages::-webkit-scrollbar {
+        width: 5px;
+    }
+
+    .chat-messages::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: rgba(108, 92, 231, 0.3);
+        border-radius: 10px;
+    }
+
+    .chat-msg {
+        display: flex;
+        gap: 12px;
+        max-width: 85%;
+        animation: msgAppear 0.4s ease-out;
+    }
+
+    .chat-msg.bot {
+        align-self: flex-start;
+    }
+
+    .chat-msg.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+    }
+
+    @keyframes msgAppear {
+        from { opacity: 0; transform: translateY(10px) scale(0.97); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .msg-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: .8rem;
+        font-weight: 800;
+    }
+
+    .msg-avatar.bot-av {
+        background: var(--grad);
+    }
+
+    .msg-avatar.user-av {
+        background: rgba(0, 210, 255, 0.15);
+        color: var(--blue);
+    }
+
+    .msg-bubble {
+        padding: 14px 18px;
+        border-radius: 18px;
+        font-size: .88rem;
+        line-height: 1.6;
+    }
+
+    .chat-msg.bot .msg-bubble {
+        background: rgba(108, 92, 231, 0.08);
+        border: 1px solid rgba(108, 92, 231, 0.15);
+        border-bottom-left-radius: 6px;
+        color: var(--text);
+    }
+
+    .chat-msg.user .msg-bubble {
+        background: linear-gradient(135deg, rgba(0, 210, 255, 0.12), rgba(108, 92, 231, 0.12));
+        border: 1px solid rgba(0, 210, 255, 0.2);
+        border-bottom-right-radius: 6px;
+        color: var(--text);
+    }
+
+    .chat-input-area {
+        display: flex;
+        gap: 12px;
+        padding: 18px 24px;
+        border-top: 1px solid var(--border);
+        background: rgba(6, 7, 27, 0.5);
+    }
+
+    .chat-input {
+        flex: 1;
+        padding: 14px 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        color: var(--text);
+        font-family: inherit;
+        font-size: .9rem;
+        outline: none;
+        transition: border-color 0.3s;
+    }
+
+    .chat-input:focus {
+        border-color: var(--purple);
+        box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
+    }
+
+    .chat-input::placeholder {
+        color: var(--muted);
+    }
+
+    .chat-send-btn {
+        width: 48px;
+        height: 48px;
+        border: none;
+        border-radius: 14px;
+        background: var(--grad);
+        color: #fff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s;
+        flex-shrink: 0;
+    }
+
+    .chat-send-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(108, 92, 231, 0.35);
+    }
+
+    .chat-send-btn:active {
+        transform: scale(0.95);
+    }
+
+    /* Quick Chips */
+    .quick-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0 28px 18px;
+    }
+
+    .quick-chip {
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        font-family: inherit;
+        font-size: .78rem;
+        font-weight: 600;
+        color: var(--text2);
+        background: rgba(255, 255, 255, 0.03);
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .quick-chip:hover {
+        background: rgba(108, 92, 231, 0.1);
+        border-color: rgba(108, 92, 231, 0.3);
+        color: var(--text);
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 0;
+    }
+
+    .typing-indicator span {
+        width: 7px;
+        height: 7px;
+        background: var(--purple);
+        border-radius: 50%;
+        animation: typingBounce 1.2s ease-in-out infinite;
+    }
+
+    .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+
+    @keyframes typingBounce {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+        30% { transform: translateY(-8px); opacity: 1; }
+    }
+
+    /* ── Human Support Panel ── */
+    .contact-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+
+    .contact-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 32px 26px;
+        text-align: center;
+        transition: all 0.4s;
+    }
+
+    .contact-card:hover {
+        border-color: rgba(0, 210, 255, 0.3);
+        transform: translateY(-4px);
+        box-shadow: 0 18px 48px rgba(108, 92, 231, 0.12);
+    }
+
+    .contact-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+    }
+
+    .contact-card h4 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .contact-card p {
+        font-size: .82rem;
+        color: var(--text2);
+        margin-bottom: 16px;
+        line-height: 1.5;
+    }
+
+    .contact-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: .82rem;
+        font-weight: 700;
+        color: var(--blue);
+        transition: color 0.3s;
+    }
+
+    .contact-link:hover {
+        color: var(--purple);
+    }
+
+    /* ── FAQ / Accordion Section ── */
+    .faq-section {
+        max-width: 780px;
+        margin: 0 auto;
+    }
+
+    .faq-section h2 {
+        font-size: 1.6rem;
+        font-weight: 800;
+        margin-bottom: 24px;
+        text-align: center;
+    }
+
+    .faq-item {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: border-color 0.3s;
+    }
+
+    .faq-item:hover {
+        border-color: rgba(108, 92, 231, 0.25);
+    }
+
+    .faq-question {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px;
+        cursor: pointer;
+        font-size: .92rem;
+        font-weight: 700;
+        color: var(--text);
+        background: none;
+        border: none;
+        width: 100%;
+        font-family: inherit;
+        text-align: left;
+        transition: color 0.3s;
+    }
+
+    .faq-question:hover {
+        color: var(--blue);
+    }
+
+    .faq-question .faq-arrow {
+        width: 20px;
+        height: 20px;
+        transition: transform 0.35s;
+        flex-shrink: 0;
+        color: var(--muted);
+    }
+
+    .faq-item.open .faq-question .faq-arrow {
+        transform: rotate(180deg);
+        color: var(--purple);
+    }
+
+    .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.45s ease, padding 0.35s;
+        padding: 0 24px;
+    }
+
+    .faq-item.open .faq-answer {
+        max-height: 300px;
+        padding: 0 24px 22px;
+    }
+
+    .faq-answer p {
+        font-size: .85rem;
+        color: var(--text2);
+        line-height: 1.7;
+    }
+
+    /* ── Payment Info Panel ── */
+    .payment-info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        margin-bottom: 36px;
+    }
+
+    .payment-info-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 30px 24px;
+        text-align: center;
+        transition: all 0.4s;
+    }
+
+    .payment-info-card:hover {
+        border-color: rgba(0, 230, 118, 0.3);
+        transform: translateY(-4px);
+    }
+
+    .payment-info-card .info-icon {
+        font-size: 2rem;
+        margin-bottom: 14px;
+    }
+
+    .payment-info-card h4 {
+        font-size: .95rem;
+        font-weight: 700;
+        margin-bottom: 6px;
+    }
+
+    .payment-info-card p {
+        font-size: .8rem;
+        color: var(--text2);
+        line-height: 1.55;
+    }
+
+    /* ── General Rules Panel ── */
+    .rules-list {
+        max-width: 780px;
+        margin: 0 auto;
+    }
+
+    .rule-item {
+        display: flex;
+        gap: 16px;
+        padding: 22px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .rule-item:last-child {
+        border: none;
+    }
+
+    .rule-number {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        background: var(--grad);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: .78rem;
+        font-weight: 800;
+        color: #fff;
+    }
+
+    .rule-content h4 {
+        font-size: .95rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .rule-content p {
+        font-size: .84rem;
+        color: var(--text2);
+        line-height: 1.6;
+    }
+
+    /* ── Bottom CTA ── */
+    .support-cta {
+        text-align: center;
+        margin-top: 56px;
+        padding: 36px 28px;
+        background: linear-gradient(135deg, rgba(108, 92, 231, 0.08), rgba(0, 210, 255, 0.06));
+        border: 1px solid rgba(108, 92, 231, 0.15);
+        border-radius: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .support-cta::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--grad);
+    }
+
+    .support-cta h3 {
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+    }
+
+    .support-cta p {
+        font-size: .88rem;
+        color: var(--text2);
+        margin-bottom: 20px;
+    }
+
+    .support-cta .cta-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 13px 28px;
+        border-radius: 14px;
+        background: var(--grad);
+        color: #fff;
+        font-weight: 700;
+        font-size: .9rem;
+        transition: all 0.35s;
+        text-decoration: none;
+    }
+
+    .support-cta .cta-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    /* ── Panel Titles ── */
+    .panel-title {
+        font-size: 1.45rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+        text-align: center;
+    }
+
+    .panel-subtitle {
+        font-size: .92rem;
+        color: var(--text2);
+        text-align: center;
+        margin-bottom: 32px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+        .support-hero h1 {
+            font-size: 2rem;
+        }
+
+        .category-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .contact-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .payment-info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .chat-messages {
+            height: 320px;
+        }
+
+        .chat-msg {
+            max-width: 95%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="support-page">
+    <div class="container">
+        <!-- ═══ Hero ═══ -->
+        <div class="support-hero" style="position: relative;">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="section-badge">SUPPORT CENTER</div>
+            <h1>How Can We <span class="gradient-text">Help You</span> Today?</h1>
+            <p>Choose a category below to get started. Our AI agent resolves most issues instantly.</p>
+        </div>
+
+        <!-- ═══ Category Cards ═══ -->
+        <div class="category-grid" id="categoryGrid">
+            <!-- Account Queries -->
+            <div class="category-card active" data-panel="account" onclick="switchPanel('account', this)">
+                <div class="card-icon-wrap purple">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <h3>Account Queries</h3>
+                <p class="card-desc">AI-powered support for account status, failures, payout eligibility, and more.</p>
+                <span class="card-tag ai"><span class="pulse-dot"></span> AI AGENT ONLINE</span>
+            </div>
+
+            <!-- Human Support -->
+            <div class="category-card" data-panel="human" onclick="switchPanel('human', this)">
+                <div class="card-icon-wrap cyan">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                    </svg>
+                </div>
+                <h3>Human Support</h3>
+                <p class="card-desc">Connect with our team via Telegram, email, or direct message for complex issues.</p>
+                <span class="card-tag human">LIVE AGENTS</span>
+            </div>
+
+            <!-- Payment Queries -->
+            <div class="category-card" data-panel="payment" onclick="switchPanel('payment', this)">
+                <div class="card-icon-wrap emerald">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                </div>
+                <h3>Payment Queries</h3>
+                <p class="card-desc">Refunds, failed transactions, subscription renewals, and billing questions.</p>
+                <span class="card-tag payment">PAYMENTS</span>
+            </div>
+
+            <!-- General Queries & Rules -->
+            <div class="category-card" data-panel="general" onclick="switchPanel('general', this)">
+                <div class="card-icon-wrap amber">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="16" x2="12" y2="12"/>
+                        <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                </div>
+                <h3>General Queries & Rules</h3>
+                <p class="card-desc">Platform rules, trading guidelines, indicator usage, and general FAQs.</p>
+                <span class="card-tag general">INFO & RULES</span>
+            </div>
+        </div>
+
+        <!-- ════════ PANELS ════════ -->
+
+        <!-- Panel 1: Account – AI Chat -->
+        <div class="support-panel active" id="panel-account">
+            <div class="panel-title">Account <span class="gradient-text">AI Support</span></div>
+            <p class="panel-subtitle">Powered by our advanced AI agent with access to your trading data. Get instant answers.</p>
+
+            <div class="ai-chat-section">
+                <div class="chat-header">
+                    <div class="chat-avatar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                            <path d="M2 17l10 5 10-5"/>
+                            <path d="M2 12l10 5 10-5"/>
+                        </svg>
+                        <div class="online-dot"></div>
+                    </div>
+                    <div class="chat-header-info">
+                        <h3>Gautam Singh AI Agent</h3>
+                        <span>● Online — Average response: instant</span>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <div class="chat-msg bot">
+                        <div class="msg-avatar bot-av">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                <path d="M2 17l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <div class="msg-bubble">
+                            👋 Welcome to Gautam Singh AI Support!<br><br>
+                            I can help you with:<br>
+                            • Account status & verification<br>
+                            • Indicator access issues<br>
+                            • Subscription expiry questions<br>
+                            • Payout eligibility<br><br>
+                            Type your question or use the quick options below.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="quick-chips" id="quickChips">
+                    <button class="quick-chip" onclick="sendQuickMessage('Why did my account fail?')">Why did my account fail?</button>
+                    <button class="quick-chip" onclick="sendQuickMessage('Am I eligible for payout?')">Am I eligible for payout?</button>
+                    <button class="quick-chip" onclick="sendQuickMessage('My indicator access expired')">Indicator access expired</button>
+                    <button class="quick-chip" onclick="sendQuickMessage('How to renew subscription?')">How to renew?</button>
+                </div>
+
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="Type your account question here…" onkeypress="if(event.key==='Enter') sendMessage()">
+                    <button class="chat-send-btn" onclick="sendMessage()" id="sendBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"/>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 2: Human Support -->
+        <div class="support-panel" id="panel-human">
+            <div class="panel-title">Connect With <span class="gradient-text">Our Team</span></div>
+            <p class="panel-subtitle">For complex issues that need a personal touch. We typically respond within 2-4 hours.</p>
+
+            <div class="contact-grid">
+                <div class="contact-card">
+                    <div class="contact-icon" style="background: linear-gradient(135deg, #0088cc, #00AAFF);">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+                            <path d="M11.994 2C6.472 2 2 6.475 2 12c0 1.89.525 3.66 1.438 5.168L2.035 22l4.957-1.38A9.96 9.96 0 0012.006 22C17.528 22 22 17.522 22 12S17.528 2 12.006 2z"/>
+                        </svg>
+                    </div>
+                    <h4>Telegram</h4>
+                    <p>Fastest way to reach us. Join our Telegram group for real-time support.</p>
+                    <a href="#" class="contact-link">
+                        Message on Telegram
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                </div>
+
+                <div class="contact-card">
+                    <div class="contact-icon" style="background: linear-gradient(135deg, #EA4335, #FF6B6B);">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                    </div>
+                    <h4>Email Support</h4>
+                    <p>For detailed queries, documentation, or formal requests.</p>
+                    <a href="mailto:support@gautamsinghai.com" class="contact-link">
+                        support@gautamsinghai.com
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                </div>
+
+                <div class="contact-card">
+                    <div class="contact-icon" style="background: linear-gradient(135deg, #E1306C, #F56040);">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round">
+                            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                        </svg>
+                    </div>
+                    <h4>Instagram DM</h4>
+                    <p>Reach out on Instagram for quick questions and updates.</p>
+                    <a href="#" class="contact-link">
+                        @gautamsingh_ai
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                </div>
+
+                <div class="contact-card">
+                    <div class="contact-icon" style="background: linear-gradient(135deg, #7289DA, #5865F2);">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="white">
+                            <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09-.01-.02-.04-.03-.07-.03-1.5.26-2.93.71-4.27 1.33-.01 0-.02.01-.03.02-2.72 4.07-3.47 8.03-3.1 11.95 0 .02.01.04.03.05 1.8 1.32 3.53 2.12 5.24 2.65.03.01.06 0 .07-.02.4-.55.76-1.13 1.07-1.74.02-.04 0-.08-.04-.09-.57-.22-1.11-.48-1.64-.78-.04-.02-.04-.08-.01-.11.11-.08.22-.17.33-.25.02-.02.05-.02.07-.01 3.44 1.57 7.15 1.57 10.55 0 .02-.01.05-.01.07.01.11.09.22.17.33.26.04.03.04.09-.01.11-.52.31-1.07.56-1.64.78-.04.01-.05.06-.04.09.32.61.68 1.19 1.07 1.74.02.03.05.03.07.02 1.72-.53 3.45-1.33 5.24-2.65.02-.01.03-.03.03-.05.44-4.53-.73-8.46-3.1-11.95-.01-.01-.02-.02-.04-.02z"/>
+                        </svg>
+                    </div>
+                    <h4>Discord</h4>
+                    <p>Join our community server for peer support and live discussions.</p>
+                    <a href="#" class="contact-link">
+                        Join Discord Server
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 3: Payment Queries -->
+        <div class="support-panel" id="panel-payment">
+            <div class="panel-title">Payment <span class="gradient-text">Support</span></div>
+            <p class="panel-subtitle">Everything about payments, refunds, and billing managed through Razorpay.</p>
+
+            <div class="payment-info-grid">
+                <div class="payment-info-card">
+                    <div class="info-icon">🔒</div>
+                    <h4>Secure Payments</h4>
+                    <p>All transactions are processed securely through Razorpay. We accept UPI, Cards, and Netbanking.</p>
+                </div>
+                <div class="payment-info-card">
+                    <div class="info-icon">🔄</div>
+                    <h4>Subscription Renewal</h4>
+                    <p>Monthly subscriptions auto-expire after 30 days. Renew anytime from the indicator detail page.</p>
+                </div>
+                <div class="payment-info-card">
+                    <div class="info-icon">💸</div>
+                    <h4>Refund Policy</h4>
+                    <p>Refund requests within 24 hours of purchase may be eligible. Contact us for assistance.</p>
+                </div>
+            </div>
+
+            <div class="faq-section">
+                <h2>Payment <span class="gradient-text">FAQ</span></h2>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        My payment failed but money was deducted. What do I do?
+                        <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Don't worry! If your payment failed but money was deducted, Razorpay will automatically reverse the transaction within 5-7 business days. If you don't see the refund after 7 days, contact us with your transaction ID.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        Can I upgrade from one indicator to another?
+                        <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Each indicator is a separate purchase. You can buy multiple indicators simultaneously. Check the Store page for all available indicators and their prices.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        How does the 30-day subscription work?
+                        <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>When you purchase an indicator, you receive a unique access password and Pine Script code. The code includes an embedded expiry timestamp. After 30 days, the indicator will lock until you renew your subscription from the indicator detail page.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        What payment methods are accepted?
+                        <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>We accept UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards (Visa, Mastercard, RuPay), Netbanking, and wallets — all powered by Razorpay's secure checkout.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel 4: General Queries & Rules -->
+        <div class="support-panel" id="panel-general">
+            <div class="panel-title">General <span class="gradient-text">Queries & Rules</span></div>
+            <p class="panel-subtitle">Platform guidelines, indicator usage policies, and frequently asked questions.</p>
+
+            <div class="rules-list">
+                <div class="rule-item">
+                    <div class="rule-number">1</div>
+                    <div class="rule-content">
+                        <h4>Educational Purpose Only</h4>
+                        <p>All indicators, analysis, and trade signals provided on this platform are for educational purposes only. They should not be considered as financial advice. Always do your own research before making any trading decisions.</p>
+                    </div>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">2</div>
+                    <div class="rule-content">
+                        <h4>No Code Sharing or Redistribution</h4>
+                        <p>Purchased Pine Script code is licensed to your account only. Sharing, redistributing, reselling, or publishing the indicator code is strictly prohibited and will result in immediate access revocation.</p>
+                    </div>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">3</div>
+                    <div class="rule-content">
+                        <h4>One Account Per User</h4>
+                        <p>Each user is limited to one account. Creating multiple accounts to abuse promotions, referral codes, or free trials is not allowed and may lead to all accounts being suspended.</p>
+                    </div>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">4</div>
+                    <div class="rule-content">
+                        <h4>Indicator Updates & Maintenance</h4>
+                        <p>We regularly update our indicators to improve performance and fix bugs. During maintenance windows, some indicators may temporarily be unavailable. Always keep your Pine Script code updated with the latest version.</p>
+                    </div>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">5</div>
+                    <div class="rule-content">
+                        <h4>VIP Access & Expiry</h4>
+                        <p>VIP access codes are valid for 30 days from activation. Each code can only be used once and is tied to a single account. Expired access can be renewed by purchasing a new subscription or code.</p>
+                    </div>
+                </div>
+
+                <div class="rule-item">
+                    <div class="rule-number">6</div>
+                    <div class="rule-content">
+                        <h4>Community Conduct</h4>
+                        <p>Be respectful in all community channels. Harassment, spam, unsolicited promotions, or sharing of harmful content will result in an immediate ban from all Gautam Singh AI platforms.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="faq-section" style="margin-top: 48px;">
+                <h2>General <span class="gradient-text">FAQ</span></h2>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        How do I apply an indicator on TradingView?
+                        <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>After purchasing, go to the indicator detail page and copy the Pine Script code. In TradingView, open the Pine Editor (bottom panel), paste the code, and click "Add to Chart". The indicator will appear on your active chart.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        What timeframes do the indicators work on?
+                        <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Our indicators are designed to work across all timeframes — from 1-minute scalping to daily swing trading. However, for optimal results, we recommend using them on 15-minute, 1-hour, and 4-hour charts as described in each indicator's documentation.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" onclick="toggleFaq(this)">
+                        Can I use indicators on multiple charts / devices?
+                        <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! Once you paste the indicator code in TradingView's Pine Editor and save it under your TradingView account, you can apply it to any chart, any instrument, on any device where you're logged into TradingView.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ Bottom CTA ═══ -->
+        <div class="support-cta">
+            <h3>Still Need Help?</h3>
+            <p>Can't find what you're looking for? Our team is always ready to assist you personally.</p>
+            <a href="mailto:support@gautamsinghai.com" class="cta-link">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                Contact Us Directly
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── Panel Switching ──
+    function switchPanel(panelId, cardEl) {
+        // Update cards
+        document.querySelectorAll('.category-card').forEach(c => c.classList.remove('active'));
+        cardEl.classList.add('active');
+
+        // Update panels
+        document.querySelectorAll('.support-panel').forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById('panel-' + panelId);
+        panel.classList.add('active');
+
+        // Smooth scroll to panel
+        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ── FAQ Accordion ──
+    function toggleFaq(btn) {
+        const item = btn.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+        // Close all in same section
+        item.parentElement.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!isOpen) {
+            item.classList.add('open');
+        }
+    }
+
+    // ── AI Chat ──
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const quickChips = document.getElementById('quickChips');
+
+    const aiResponses = {
+        'why did my account fail?': "There are several common reasons an account may fail:\n\n• **Maximum daily loss exceeded** — If your drawdown exceeds the set limit.\n• **Maximum overall loss exceeded** — Total account loss surpassed the threshold.\n• **Time limit expired** — The evaluation period ended before targets were met.\n• **Rule violation** — Trading during restricted hours or using prohibited strategies.\n\nTo check your specific account, please share your account ID and I'll look into it.",
+        'am i eligible for payout?': "To be eligible for a payout, you generally need to meet these requirements:\n\n✅ **Profit target achieved** — Must hit your profit goal.\n✅ **Minimum trading days** — Usually 5-10 trading days minimum.\n✅ **No active violations** — No rule breaches during the trading period.\n✅ **Active subscription** — Your indicator/VIP access must be valid.\n\nIf you've met all criteria, you can request a payout from your dashboard. Contact us if you need further verification.",
+        'my indicator access expired': "I see that your indicator access may have expired. Here's how to resolve this:\n\n1. **Go to the Store** → Find your indicator.\n2. **Click Renew** → Process the renewal payment.\n3. **Get new code** → A fresh access password and updated Pine Script will be generated.\n\nYour new subscription will be valid for another 30 days. If you're having trouble, use the Human Support tab to connect directly with our team.",
+        'how to renew subscription?': "Renewing your subscription is easy! Follow these steps:\n\n1. Navigate to **My Purchases** from the navigation menu.\n2. Find the expired indicator.\n3. Click on it to open the indicator detail page.\n4. Click the **Renew Subscription** button.\n5. Complete the payment through Razorpay.\n\n✨ Once renewed, you'll receive an updated Pine Script code with a new 30-day validity period and fresh access password."
+    };
+
+    function addMessage(text, isUser = false) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-msg ' + (isUser ? 'user' : 'bot');
+
+        const avatar = document.createElement('div');
+        avatar.className = 'msg-avatar ' + (isUser ? 'user-av' : 'bot-av');
+
+        if (isUser) {
+            avatar.textContent = '{{ user.username|first|default:"U" }}';
+        } else {
+            avatar.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>';
+        }
+
+        const bubble = document.createElement('div');
+        bubble.className = 'msg-bubble';
+        // Convert markdown-like bold to HTML
+        bubble.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+
+        msgDiv.appendChild(avatar);
+        msgDiv.appendChild(bubble);
+        chatMessages.appendChild(msgDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTyping() {
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'chat-msg bot';
+        typingDiv.id = 'typingIndicator';
+        typingDiv.innerHTML = `
+            <div class="msg-avatar bot-av">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/></svg>
+            </div>
+            <div class="msg-bubble">
+                <div class="typing-indicator"><span></span><span></span><span></span></div>
+            </div>
+        `;
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeTyping() {
+        const typing = document.getElementById('typingIndicator');
+        if (typing) typing.remove();
+    }
+
+    function getBotResponse(question) {
+        const q = question.toLowerCase().trim();
+        // Check for keyword matches
+        for (const [key, response] of Object.entries(aiResponses)) {
+            if (q.includes(key) || key.includes(q)) {
+                return response;
+            }
+        }
+
+        // Keyword-based fallback
+        if (q.includes('fail') || q.includes('failed')) {
+            return aiResponses['why did my account fail?'];
+        }
+        if (q.includes('payout') || q.includes('withdraw')) {
+            return aiResponses['am i eligible for payout?'];
+        }
+        if (q.includes('expire') || q.includes('expired') || q.includes('access')) {
+            return aiResponses['my indicator access expired'];
+        }
+        if (q.includes('renew') || q.includes('subscription') || q.includes('extend')) {
+            return aiResponses['how to renew subscription?'];
+        }
+        if (q.includes('password') || q.includes('code')) {
+            return "Your access password is generated automatically when you purchase or renew a subscription. You can find it on the **indicator detail page** under \"Access Password\". If it's not showing, try refreshing the page or contact our team via the **Human Support** tab.";
+        }
+        if (q.includes('refund') || q.includes('money back')) {
+            return "For refund requests, please note:\n\n• Refund requests must be made within **24 hours** of purchase.\n• Head to the **Payment Queries** tab for details.\n• For immediate assistance, use the **Human Support** tab.\n\nOur team will review and process eligible refunds within 3-5 business days.";
+        }
+
+        // Default response
+        return "Thank you for your question! I'll do my best to help.\n\nI specialize in account-related queries. For this specific topic, I'd recommend:\n\n1. Checking the **Payment Queries** tab for billing issues.\n2. Reviewing the **General Queries & Rules** tab for platform guidelines.\n3. Reaching out via **Human Support** if you need personalized assistance.\n\nCan you rephrase your question or try one of the quick options above?";
+    }
+
+    function sendMessage() {
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, true);
+        chatInput.value = '';
+
+        // Hide quick chips after first message
+        quickChips.style.display = 'none';
+
+        // Show typing
+        showTyping();
+
+        // Simulate AI response delay
+        setTimeout(() => {
+            removeTyping();
+            addMessage(getBotResponse(text));
+        }, 1200 + Math.random() * 800);
+    }
+
+    function sendQuickMessage(text) {
+        chatInput.value = text;
+        sendMessage();
+    }
+</script>
+{% endblock %}

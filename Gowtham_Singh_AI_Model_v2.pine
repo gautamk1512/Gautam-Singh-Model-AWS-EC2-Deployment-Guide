@@ -17,7 +17,7 @@
 // ══════════════════════════════════════════════════════════════
 
 //@version=5
-indicator("Gautam Singh AI Model", shorttitle="Swift Algo X", overlay=true, max_labels_count=500, max_boxes_count=500, max_lines_count=500)
+indicator("Gautam Singh AI Intelligence - Advanced Edition", shorttitle="GS-AI Advanced", overlay=true, max_labels_count=500, max_boxes_count=500, max_lines_count=500)
 
 // ═══════════════════ INPUTS ═══════════════════
 grp_swift    = "══ ⚡ Swift Algo X Settings ══"

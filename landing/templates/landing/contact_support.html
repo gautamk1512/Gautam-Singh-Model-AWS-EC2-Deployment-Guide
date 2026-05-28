@@ -1,0 +1,589 @@
+{% extends "landing/base.html" %}
+{% load static %}
+
+{% block title %}Contact & Support - Gautam Singh AI Model{% endblock %}
+
+{% block extra_css %}
+<style>
+    .contact-support-page {
+        min-height: calc(100vh - 64px);
+        padding: 60px 0;
+        background: linear-gradient(135deg, #06071b 0%, #0c0d2b 100%);
+    }
+
+    .contact-support-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    .page-header {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    .page-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 16px;
+    }
+
+    .page-header p {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.7);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    /* Support Options Grid */
+    .support-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 60px;
+    }
+
+    .support-card {
+        background: rgba(15, 16, 48, 0.6);
+        border: 1px solid rgba(108, 92, 231, 0.15);
+        border-radius: 24px;
+        padding: 32px;
+        text-align: center;
+        transition: all 0.4s ease;
+        backdrop-filter: blur(20px);
+    }
+
+    .support-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 24px 60px rgba(108, 92, 231, 0.15);
+        border-color: rgba(0, 210, 255, 0.3);
+    }
+
+    .support-icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        font-size: 28px;
+    }
+
+    .support-icon.ai { background: linear-gradient(135deg, #6C5CE7, #8B7CF7); }
+    .support-icon.email { background: linear-gradient(135deg, #00D2FF, #00B4D8); }
+    .support-icon.telegram { background: linear-gradient(135deg, #0088cc, #00AAFF); }
+    .support-icon.whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); }
+
+    .support-card h3 {
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 12px;
+        color: #fff;
+    }
+
+    .support-card p {
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .support-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+    }
+
+    .support-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    /* Contact Form Section */
+    .contact-form-section {
+        background: rgba(15, 16, 48, 0.6);
+        border: 1px solid rgba(108, 92, 231, 0.15);
+        border-radius: 24px;
+        padding: 40px;
+        margin-bottom: 40px;
+        backdrop-filter: blur(20px);
+    }
+
+    .contact-form-section h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 24px;
+        text-align: center;
+        color: #fff;
+    }
+
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 8px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 14px 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(108, 92, 231, 0.2);
+        border-radius: 12px;
+        color: #fff;
+        font-family: inherit;
+        font-size: 0.95rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        outline: none;
+    }
+
+    .form-control:focus {
+        border-color: #00D2FF;
+        box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.15);
+    }
+
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .form-control.textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* FAQ Section */
+    .faq-section {
+        margin-top: 40px;
+    }
+
+    .faq-section h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 24px;
+        text-align: center;
+        color: #fff;
+    }
+
+    .faq-item {
+        background: rgba(15, 16, 48, 0.4);
+        border: 1px solid rgba(108, 92, 231, 0.15);
+        border-radius: 16px;
+        margin-bottom: 12px;
+        overflow: hidden;
+        transition: border-color 0.3s;
+    }
+
+    .faq-item:hover {
+        border-color: rgba(108, 92, 231, 0.25);
+    }
+
+    .faq-question {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px;
+        cursor: pointer;
+        font-size: 0.92rem;
+        font-weight: 700;
+        color: #fff;
+        background: none;
+        border: none;
+        width: 100%;
+        font-family: inherit;
+        text-align: left;
+        transition: color 0.3s;
+    }
+
+    .faq-question:hover {
+        color: #00D2FF;
+    }
+
+    .faq-question .faq-arrow {
+        width: 20px;
+        height: 20px;
+        transition: transform 0.35s;
+        flex-shrink: 0;
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    .faq-item.open .faq-question .faq-arrow {
+        transform: rotate(180deg);
+        color: #00D2FF;
+    }
+
+    .faq-answer {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.45s ease, padding 0.35s;
+        padding: 0 24px;
+    }
+
+    .faq-item.open .faq-answer {
+        max-height: 300px;
+        padding: 0 24px 22px;
+    }
+
+    .faq-answer p {
+        font-size: 0.85rem;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.7;
+    }
+
+    /* Contact Info Highlight */
+    .contact-highlight {
+        background: linear-gradient(135deg, rgba(108, 92, 231, 0.1), rgba(0, 210, 255, 0.08));
+        border: 1px solid rgba(108, 92, 231, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .contact-highlight h3 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #fff;
+    }
+
+    .contact-highlight p {
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 16px;
+    }
+
+    .email-highlight {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .email-highlight:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    @media (max-width: 768px) {
+        .page-header h1 {
+            font-size: 2rem;
+        }
+
+        .support-options {
+            grid-template-columns: 1fr;
+        }
+
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .contact-form-section {
+            padding: 24px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .contact-support-container {
+            padding: 0 16px;
+        }
+
+        .support-card {
+            padding: 24px;
+        }
+
+        .contact-form-section {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="contact-support-page">
+    <div class="contact-support-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>Contact & Support</h1>
+            <p>Get help with our trading indicators, account issues, or any questions. We're here to support your trading journey.</p>
+        </div>
+
+        <!-- Contact Highlight -->
+        <div class="contact-highlight">
+            <h3>📧 Primary Support Email</h3>
+            <p>For any questions, technical issues, or account support</p>
+            <a href="mailto:gautamsingh@ijart.in" class="email-highlight">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                gautamsingh@ijart.in
+            </a>
+        </div>
+
+        <!-- Support Options -->
+        <div class="support-options">
+            <div class="support-card">
+                <div class="support-icon ai">🤖</div>
+                <h3>AI Support Assistant</h3>
+                <p>Get instant answers to common questions about indicators, account issues, and trading guidance.</p>
+                <a href="#" class="support-link" onclick="alert('AI Chat feature coming soon!'); return false;">
+                    Chat with AI
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </a>
+            </div>
+
+            <div class="support-card">
+                <div class="support-icon email">✉️</div>
+                <h3>Email Support</h3>
+                <p>Send detailed queries and get comprehensive responses within 24 hours for technical issues.</p>
+                <a href="mailto:gautamsingh@ijart.in" class="support-link">
+                    Send Email
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </a>
+            </div>
+
+            <div class="support-card">
+                <div class="support-icon telegram">📱</div>
+                <h3>Telegram Support</h3>
+                <p>Join our Telegram channel for real-time updates and quick support responses.</p>
+                <a href="#" class="support-link" onclick="alert('Telegram channel coming soon!'); return false;">
+                    Join Telegram
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </a>
+            </div>
+
+            <div class="support-card">
+                <div class="support-icon whatsapp">💬</div>
+                <h3>WhatsApp Business</h3>
+                <p>Connect via WhatsApp for quick questions and receive instant notifications about updates.</p>
+                <a href="#" class="support-link" onclick="alert('WhatsApp Business coming soon!'); return false;">
+                    WhatsApp Us
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Contact Form Section -->
+        <div class="contact-form-section">
+            <h2>Send Us a Message</h2>
+            <form method="post" id="contactForm">
+                {% csrf_token %}
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="name">Your Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="subject">Subject *</label>
+                    <input type="text" class="form-control" id="subject" name="subject" required>
+                </div>
+                <div class="form-group full-width">
+                    <label for="message">Message *</label>
+                    <textarea class="form-control textarea" id="message" name="message" rows="5" required placeholder="Describe your issue or question in detail..."></textarea>
+                </div>
+                <button type="submit" class="btn-submit">Send Message</button>
+            </form>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="faq-section">
+            <h2>Frequently Asked Questions</h2>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    How do I apply an indicator on TradingView?
+                    <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-answer">
+                    <p>After purchasing, go to the indicator detail page and copy the Pine Script code. In TradingView, open the Pine Editor (bottom panel), paste the code, and click "Add to Chart". The indicator will appear on your active chart.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    What timeframes do the indicators work on?
+                    <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-answer">
+                    <p>Our indicators are designed to work across all timeframes — from 1-minute scalping to daily swing trading. However, for optimal results, we recommend using them on 15-minute, 1-hour, and 4-hour charts as described in each indicator's documentation.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    Can I use indicators on multiple charts / devices?
+                    <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-answer">
+                    <p>Yes! Once you paste the indicator code in TradingView's Pine Editor and save it under your TradingView account, you can apply it to any chart, any instrument, on any device where you're logged into TradingView.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    How does the 30-day subscription work?
+                    <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-answer">
+                    <p>When you purchase an indicator, you receive a unique access password and Pine Script code. The code includes an embedded expiry timestamp. After 30 days, the indicator will lock until you renew your subscription from the indicator detail page.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    What payment methods are accepted?
+                    <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-answer">
+                    <p>We accept UPI (Google Pay, PhonePe, Paytm), Credit/Debit Cards (Visa, Mastercard, RuPay), Netbanking, and wallets — all powered by Razorpay's secure checkout.</p>
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <button class="faq-question" onclick="toggleFaq(this)">
+                    My payment failed but money was deducted. What do I do?
+                    <svg class="faq-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="faq-answer">
+                    <p>Don't worry! If your payment failed but money was deducted, Razorpay will automatically reverse the transaction within 5-7 business days. If you don't see the refund after 7 days, contact us with your transaction ID at gautamsingh@ijart.in</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Form submission handling
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = this.querySelector('.btn-submit');
+        const originalText = submitBtn.textContent;
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+        
+        // Get form data
+        const formData = new FormData(this);
+        
+        // Send AJAX request
+        fetch('{% url "contact_submit" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert('Thank you for your message! We\'ll get back to you soon.');
+                this.reset();
+            } else {
+                // Show error message
+                alert(data.message || 'An error occurred. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        })
+        .finally(() => {
+            // Reset button state
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        });
+    });
+
+    // FAQ Accordion
+    function toggleFaq(btn) {
+        const item = btn.closest('.faq-item');
+        const isOpen = item.classList.contains('open');
+        // Close all in same section
+        item.parentElement.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+        if (!isOpen) {
+            item.classList.add('open');
+        }
+    }
+</script>
+{% endblock %}

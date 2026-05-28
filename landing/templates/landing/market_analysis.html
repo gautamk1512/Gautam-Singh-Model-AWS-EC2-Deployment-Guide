@@ -145,7 +145,7 @@
                         <span class="analysis-time">{{ a.published_at|date:"d M Y, h:i A" }}</span>
                     </div>
                     <h3 class="analysis-title">{{ a.title }}</h3>
-                    <div class="analysis-levels">{{ a.key_levels }}</div>
+                    <div class="analysis-levels">{{ a.key_levels|linebreaksbr }}</div>
                 </div>
             </div>
             {% endfor %}

@@ -4,7 +4,7 @@
 
 //@version=5
 
-indicator(title='Gautam Singh Custom Strategy Builder - Professional Trading Indicator', shorttitle="Gautam Singh Indicator v1", overlay=true, max_bars_back=500)
+indicator(title='Gautam Singh AI Intelligence - Core Edition', shorttitle="GS-AI Core", overlay=true, max_bars_back=500)
 
 ma(_source, _length, _type) => 
     switch _type

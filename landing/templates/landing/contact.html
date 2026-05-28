@@ -1,0 +1,414 @@
+{% extends "landing/base.html" %}
+{% load static %}
+
+{% block title %}Contact Us - Gautam Singh AI Model{% endblock %}
+
+{% block extra_css %}
+<style>
+    .contact-page {
+        min-height: calc(100vh - 64px);
+        padding: 60px 0;
+        background: linear-gradient(135deg, #06071b 0%, #0c0d2b 100%);
+    }
+
+    .contact-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    .contact-header {
+        text-align: center;
+        margin-bottom: 60px;
+    }
+
+    .contact-header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 16px;
+    }
+
+    .contact-header p {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.7);
+        max-width: 600px;
+        margin: 0 auto;
+        line-height: 1.6;
+    }
+
+    .contact-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 40px;
+        margin-bottom: 40px;
+    }
+
+    .contact-info {
+        background: rgba(15, 16, 48, 0.6);
+        border: 1px solid rgba(108, 92, 231, 0.15);
+        border-radius: 24px;
+        padding: 40px;
+        backdrop-filter: blur(20px);
+    }
+
+    .contact-info h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 24px;
+        color: #fff;
+    }
+
+    .contact-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+
+    .contact-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .contact-item-icon {
+        width: 48px;
+        height: 48px;
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .contact-item-icon svg {
+        width: 24px;
+        height: 24px;
+        color: #fff;
+    }
+
+    .contact-item-content h3 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 4px;
+        color: #fff;
+    }
+
+    .contact-item-content p {
+        color: rgba(255, 255, 255, 0.7);
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .contact-item-content a {
+        color: #00D2FF;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+
+    .contact-item-content a:hover {
+        color: #6C5CE7;
+    }
+
+    .contact-form {
+        background: rgba(15, 16, 48, 0.6);
+        border: 1px solid rgba(108, 92, 231, 0.15);
+        border-radius: 24px;
+        padding: 40px;
+        backdrop-filter: blur(20px);
+    }
+
+    .contact-form h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 24px;
+        color: #fff;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 8px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 14px 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(108, 92, 231, 0.2);
+        border-radius: 12px;
+        color: #fff;
+        font-family: inherit;
+        font-size: 0.95rem;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        outline: none;
+    }
+
+    .form-control:focus {
+        border-color: #00D2FF;
+        box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.15);
+    }
+
+    .form-control::placeholder {
+        color: rgba(255, 255, 255, 0.4);
+    }
+
+    .form-control.textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        border: none;
+        border-radius: 12px;
+        color: #fff;
+        font-family: inherit;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .help-section {
+        background: rgba(15, 16, 48, 0.6);
+        border: 1px solid rgba(108, 92, 231, 0.15);
+        border-radius: 24px;
+        padding: 40px;
+        text-align: center;
+    }
+
+    .help-section h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 16px;
+        color: #fff;
+    }
+
+    .help-section p {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 24px;
+    }
+
+    .email-highlight {
+        display: inline-block;
+        background: linear-gradient(135deg, #6C5CE7, #00D2FF);
+        padding: 12px 24px;
+        border-radius: 12px;
+        color: #fff;
+        font-weight: 600;
+        font-size: 1.1rem;
+        text-decoration: none;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .email-highlight:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(108, 92, 231, 0.4);
+    }
+
+    @media (max-width: 768px) {
+        .contact-page {
+            padding: 40px 0;
+        }
+
+        .contact-header h1 {
+            font-size: 2rem;
+        }
+
+        .contact-content {
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+
+        .contact-info,
+        .contact-form {
+            padding: 24px;
+        }
+
+        .contact-item {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .contact-item-icon {
+            margin: 0 auto 16px;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .contact-header h1 {
+            font-size: 1.8rem;
+        }
+
+        .contact-header p {
+            font-size: 1rem;
+        }
+
+        .contact-info,
+        .contact-form {
+            padding: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="contact-page">
+    <div class="contact-container">
+        <div class="contact-header">
+            <h1>Get In Touch</h1>
+            <p>Have questions about our trading indicators or need support? We're here to help you succeed in your trading journey.</p>
+        </div>
+
+        <div class="contact-content">
+            <div class="contact-info">
+                <h2>Contact Information</h2>
+                
+                <div class="contact-item">
+                    <div class="contact-item-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                    <div class="contact-item-content">
+                        <h3>Email Support</h3>
+                        <p>For any questions or support</p>
+                        <a href="mailto:gautamsingh@ijart.in">gautamsingh@ijart.in</a>
+                    </div>
+                </div>
+
+                <div class="contact-item">
+                    <div class="contact-item-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    </div>
+                    <div class="contact-item-content">
+                        <h3>Response Time</h3>
+                        <p>We typically respond within 24 hours</p>
+                        <p>Monday - Friday: 9 AM - 6 PM IST</p>
+                    </div>
+                </div>
+
+                <div class="contact-item">
+                    <div class="contact-item-icon">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                        </svg>
+                    </div>
+                    <div class="contact-item-content">
+                        <h3>Services</h3>
+                        <p>Trading indicators, support & guidance</p>
+                        <p>Premium trading signals & analysis</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contact-form">
+                <h2>Send Message</h2>
+                <form method="post" id="contactForm">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="name">Your Name *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address *</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="subject">Subject *</label>
+                        <input type="text" class="form-control" id="subject" name="subject" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message *</label>
+                        <textarea class="form-control textarea" id="message" name="message" rows="5" required></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit">Send Message</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="help-section">
+            <h2>Need Immediate Help?</h2>
+            <p>Contact us directly at our support email for any urgent queries or assistance.</p>
+            <a href="mailto:gautamsingh@ijart.in" class="email-highlight">gautamsingh@ijart.in</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Form submission handling
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = this.querySelector('.btn-submit');
+        const originalText = submitBtn.textContent;
+        
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+        
+        // Get form data
+        const formData = new FormData(this);
+        
+        // Send AJAX request
+        fetch('{% url "contact_submit" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message
+                alert('Thank you for your message! We\'ll get back to you soon.');
+                this.reset();
+            } else {
+                // Show error message
+                alert(data.message || 'An error occurred. Please try again.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        })
+        .finally(() => {
+            // Reset button state
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        });
+    });
+</script>
+{% endblock %}

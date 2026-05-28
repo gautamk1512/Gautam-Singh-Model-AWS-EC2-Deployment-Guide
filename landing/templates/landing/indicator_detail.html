@@ -448,11 +448,47 @@
             </div>
         </div>
 
-        {% if has_access %}
+        {% if is_expired %}
+        <!-- ═══════ SUBSCRIPTION EXPIRED ═══════ -->
+        <div class="locked-card" style="border-color: rgba(255,71,87,0.4); background: rgba(255,71,87,0.02);">
+            <div class="lock-icon" style="filter: hue-rotate(330deg);">⏳</div>
+            <h2 style="color: var(--card-hover);">Subscription Expired</h2>
+            <p>Your 30-day access to <strong>{{ product.name }}</strong> expired on {{ purchase.valid_until|date:"d M Y" }}.</p>
+            
+            <p style="font-size: 0.9rem; margin-bottom: 25px;">
+                To generate a new activation password and continue receiving signals, please renew your subscription.
+            </p>
+
+            <button class="btn-buy-lg"
+                    id="buyBtn"
+                    onclick="initPurchase('{{ product.slug }}', '{{ product.name }}', {{ product.price|floatformat:0 }})"
+                    style="background: linear-gradient(135deg, #ff4757, #ff6b81);">
+                <span class="btn-text">Renew Access — ₹{{ product.price|floatformat:0 }}</span>
+                <span class="spinner"></span>
+            </button>
+        </div>
+
+        {% elif has_access %}
         <!-- ═══════ PURCHASED — SHOW CODE ═══════ -->
         <div class="access-card">
-            <div class="status-bar">
-                <span class="status-badge active">✓ Purchased — Lifetime Access</span>
+            <div class="status-bar" style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="status-badge active">✓ Purchased — Active Subscription</span>
+                {% if purchase.valid_until %}
+                <span style="font-size: .8rem; color: var(--muted);">Expires: {{ purchase.valid_until|date:"d M Y" }}</span>
+                {% endif %}
+            </div>
+
+            <div style="background: rgba(0, 210, 255, 0.05); border: 1px solid var(--blue); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                <h3 style="margin-top: 0; font-size: 1.1rem; color: #fff;">🔑 Your Unique Activation Password</h3>
+                <p style="color: var(--text2); font-size: 0.9rem; margin-bottom: 15px;">
+                    This indicator is locked. You must enter this exact password in the TradingView settings for it to work. 
+                    <strong>This password will auto-expire in 30 days.</strong>
+                </p>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <code style="background: #0a0b1e; padding: 10px 20px; border-radius: 6px; font-size: 1.2rem; color: #00D2FF; font-weight: bold; border: 1px solid var(--border);">
+                        {{ purchase.access_password }}
+                    </code>
+                </div>
             </div>
 
             <div class="code-header">
@@ -467,7 +503,7 @@
                     </button>
                     <button class="btn-code btn-download" onclick="downloadCode()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <path d="M21 15v4a2 2 0 0 1-2-2H5a2 2 0 0 1-2-2v-4" />
                             <polyline points="7 10 12 15 17 10" />
                             <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>

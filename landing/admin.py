@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import IndicatorProduct, Purchase, MarketAnalysis, VIPTrade, VIPAccessCode
+from .models import (
+    IndicatorProduct, Purchase, MarketAnalysis, VIPTrade, VIPAccessCode,
+    Course, CoursePurchase, ContactMessage
+)
 
 
 @admin.register(IndicatorProduct)
@@ -21,10 +24,14 @@ class IndicatorProductAdmin(admin.ModelAdmin):
 
 @admin.register(Purchase)
 class PurchaseAdmin(admin.ModelAdmin):
-    list_display = ("user", "product", "amount", "status", "razorpay_payment_id", "purchased_at")
+    list_display = ("user", "get_tv_username", "product", "amount", "status", "razorpay_payment_id", "purchased_at")
     list_filter = ("status", "product")
-    search_fields = ("user__username", "user__email", "razorpay_order_id", "razorpay_payment_id")
+    search_fields = ("user__username", "user__email", "user__profile__tradingview_username", "razorpay_order_id", "razorpay_payment_id")
     readonly_fields = ("razorpay_order_id", "razorpay_payment_id", "razorpay_signature", "purchased_at")
+
+    def get_tv_username(self, obj):
+        return obj.user.profile.tradingview_username if hasattr(obj.user, 'profile') else None
+    get_tv_username.short_description = "TradingView User"
 
     actions = ["mark_as_paid"]
 
@@ -63,3 +70,39 @@ class VIPAccessCodeAdmin(admin.ModelAdmin):
             c = VIPAccessCode.objects.create()
             codes.append(c.code)
         self.message_user(request, f"Generated 10 codes: {', '.join(codes)}")
+
+
+@admin.register(Course)
+class CourseAdmin(admin.ModelAdmin):
+    list_display = ("title", "course_type", "price", "is_active", "sort_order", "created_at")
+    list_filter = ("course_type", "is_active")
+    list_editable = ("price", "is_active", "sort_order")
+    search_fields = ("title", "slug", "description")
+    prepopulated_fields = {"slug": ("title",)}
+
+
+@admin.register(CoursePurchase)
+class CoursePurchaseAdmin(admin.ModelAdmin):
+    list_display = ("user", "course", "amount", "status", "valid_until", "purchased_at")
+    list_filter = ("status", "course")
+    search_fields = ("user__username", "user__email", "course__title", "razorpay_order_id", "razorpay_payment_id")
+    readonly_fields = ("razorpay_order_id", "razorpay_payment_id", "razorpay_signature", "purchased_at")
+
+
+@admin.register(ContactMessage)
+class ContactMessageAdmin(admin.ModelAdmin):
+    list_display = ("name", "email", "subject", "is_read", "created_at")
+    list_filter = ("is_read", "created_at")
+    search_fields = ("name", "email", "subject", "message")
+    readonly_fields = ("created_at",)
+    actions = ["mark_as_read"]
+    
+    def mark_as_read(self, request, queryset):
+        """Mark selected messages as read."""
+        count = queryset.update(is_read=True)
+        self.message_user(request, f"Marked {count} message(s) as read.")
+    mark_as_read.short_description = "Mark selected messages as read"
+    
+    def has_add_permission(self, request):
+        """Disable manual creation in admin."""
+        return False
