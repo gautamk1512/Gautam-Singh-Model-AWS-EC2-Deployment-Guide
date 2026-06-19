@@ -26,9 +26,14 @@ DEBUG = not IS_PRODUCTION
 # ─── Hosts ───
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 if IS_PRODUCTION:
-    CSRF_TRUSTED_ORIGINS = [
-        f"https://{host}" for host in ALLOWED_HOSTS if host
-    ]
+    CSRF_TRUSTED_ORIGINS = []
+    for host in ALLOWED_HOSTS:
+        if host:
+            # Wildcard domains like .onrender.com need special handling
+            if host.startswith("."):
+                CSRF_TRUSTED_ORIGINS.append(f"https://*{host}")
+            else:
+                CSRF_TRUSTED_ORIGINS.append(f"https://{host}")
 
 # Application definition
 INSTALLED_APPS = [
@@ -110,7 +115,7 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
     },
 }
 

@@ -10,7 +10,7 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DJANGO_ALLOWED_HOSTS
-        value: ".onrender.com"
+        value: ".onrender.com,gautam-singh-model.onrender.com"
       - key: DEMO_MODE
         value: "True"
       - key: SECURE_SSL_REDIRECT

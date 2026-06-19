@@ -1,0 +1,703 @@
+//@version=6
+// ══════════════════════════════════════════════════════════
+// DYNAMIC SWING VWAP [Gautam Singh AI Model]
+// ══════════════════════════════════════════════════════════
+// Author:  Gautam Singh | Gautam Singh
+// Version: 3.5.0
+
+indicator(
+    title               = "Gautam Singh Volume Dynamics - Adaptive VWAP System",
+    shorttitle          = "GS-VolDyn",
+    overlay             = true,
+    max_bars_back       = 5000,
+    max_labels_count    = 200,
+    max_lines_count     = 50)
+
+// ══════════════════════════════════════
+// CONSTANTS
+// ══════════════════════════════════════
+GRP_MAIN   = "⚙️ Main Settings"
+GRP_BANDS  = "📐 Bands"
+GRP_VISUAL = "🎨 Visual"
+GRP_DASH   = "📊 Dashboard"
+GRP_ALERT  = "🔔 Alerts"
+GRP_COLORS = "🎨 Colors"
+GRP_TRADE  = "📈 Auto Trade (EMA Retest)"
+
+INDICATOR_VERSION = "v3.5.0"
+
+// ══════════════════════════════════════
+// INPUTS
+// ══════════════════════════════════════
+prdInput          = input.int(55, "Swing Period", minval = 2, group = GRP_MAIN, tooltip = "Number of bars used to detect swing highs and lows.\n• Larger = bigger, more significant swings\n• Smaller = more frequent swings\n• Recommended: 20–80")
+baseAptInput      = input.float(21.0, "Adaptive Price Tracking", minval = 1.0, step = 1.0, group = GRP_MAIN, tooltip = "Controls how quickly VWAP adjusts to new price.\n• Lower = tighter to price, faster\n• Higher = smoother, slower\n• Recommended: 10–50")
+useAdaptInput     = input.bool(false, "Adapt APT by ATR Ratio", group = GRP_MAIN, tooltip = "When enabled, tracking speed changes automatically\nbased on market volatility.\n• High volatility → faster tracking\n• Low volatility → smoother line")
+volBiasInput      = input.float(10.0, "Volatility Bias", minval = 0.1, step = 0.1, group = GRP_MAIN, tooltip = "How strongly volatility influences tracking speed.\n• Higher = more responsive to volatility\n• Recommended: 5–15")
+srcInput          = input.source(hlc3, "VWAP Source", group = GRP_MAIN, tooltip = "Price source for VWAP calculation.\n• hlc3: standard (H+L+C)/3\n• ohlc4: includes open, better for gaps\n• close: simpler, reactive\n• hl2: midpoint of range")
+volCapInput       = input.bool(true, "Cap Volume Spikes", group = GRP_MAIN, tooltip = "Limit extreme volume bars to 3× average.\nPrevents single bars from hijacking VWAP.\nUseful on crypto and small-caps.")
+onlyLLHHInput     = input.bool(false, "Only LL / HH Anchors", group = GRP_MAIN, tooltip = "When enabled, VWAP line restarts only on\nLower-Low (LL) and Higher-High (HH) swings.\nHL, LH, EL, EH pivots get labels but\ndon't reset the VWAP segment.")
+
+showBandsInput    = input.bool(true, "Show Bands", group = GRP_BANDS, tooltip = "Display upper and lower deviation bands\naround the VWAP line, filled with trend color.")
+bandMultInput     = input.float(0.618, "Band Multiplier", minval = 0.1, step = 0.1, group = GRP_BANDS, tooltip = "ATR multiplier for band distance.\n• 0.618: Fibonacci golden ratio (default)\n• 1.0: full ATR width\n• 1.618: extended Fibonacci\n• 2.0: wide bands")
+bandTranspInput   = input.int(90, "Band Fill Transparency", minval = 50, maxval = 95, step = 5, group = GRP_BANDS, tooltip = "Transparency of the filled area between bands.\n• 85: subtle (default)\n• 50: more visible")
+
+showPivotsInput    = input.bool(true, "Show Swing Labels", group = GRP_VISUAL)
+showBgInput        = input.bool(false, "Show Trend Background", group = GRP_VISUAL)
+showWatermarkInput = input.bool(true, "Show Watermark", group = GRP_VISUAL, tooltip = "Display 'WillyAlgoTrader - by Willy' watermark on chart")
+themeInput         = input.string("Auto", "Theme", options = ["Auto", "Dark", "Light"], group = GRP_VISUAL, tooltip = "Chart color theme.\n• Auto: detects from chart background\n• Dark / Light: manual override")
+
+showDashInput = input.bool(true, "Show Dashboard", group = GRP_DASH)
+dashPosStr    = input.string("Top Right", "Position", options = ["Top Left", "Top Right", "Bottom Left", "Bottom Right"], group = GRP_DASH)
+
+highSInput    = input.color(color.lime, "Swing Low Labels", inline = "sw", group = GRP_COLORS)
+lowSInput     = input.color(color.red, "Swing High Labels", inline = "sw", group = GRP_COLORS)
+bullVwapInput = input.color(color.lime, "Bullish VWAP", inline = "vw", group = GRP_COLORS)
+bearVwapInput = input.color(color.red, "Bearish VWAP", inline = "vw", group = GRP_COLORS)
+lwInput       = input.int(2, "Line Width", minval = 1, maxval = 5, inline = "vw", group = GRP_COLORS)
+
+enableAlertsInput = input.bool(true, "Enable Alerts", group = GRP_ALERT)
+webhookInput      = input.bool(false, "Webhook JSON Format", group = GRP_ALERT, tooltip = "Send alerts in JSON format for webhook integrations.")
+
+// ── AUTO TRADE INPUTS (55 EMA Dynamic Support/Resistance Retest Strategy) ──
+enableTradeInput  = input.bool(true, "Enable Auto Trades",         group = GRP_TRADE, tooltip = "55 EMA Dynamic S/R Retest Strategy:\n• Buy: After swing forms → Dynamic Resistance breaks → Price retests 55 EMA support → Long\n• Sell: After swing forms → Dynamic Support breaks → Price retests 55 EMA resistance → Short")
+emaLenInput       = input.int(55, "EMA Length",                     group = GRP_TRADE, minval = 5, maxval = 200, tooltip = "EMA length for dynamic support/resistance.\nDefault: 55")
+showEmaInput      = input.bool(true, "Show 55 EMA Line",           group = GRP_TRADE, tooltip = "Draw the 55 EMA line on chart.\nGreen = acting as Dynamic Support\nRed = acting as Dynamic Resistance")
+showTradeLines   = input.bool(true, "Show Entry / SL / TP Lines", group = GRP_TRADE, tooltip = "Draw horizontal lines for entry, stop-loss and take-profit levels.")
+showTradeLabels  = input.bool(true, "Show Trade Labels",           group = GRP_TRADE, tooltip = "Show labels at entry, SL, and TP levels.")
+showBnRZone      = input.bool(true, "Show Break & Retest Zone",    group = GRP_TRADE, tooltip = "Highlight the resistance/support level being watched.")
+retestTolerance  = input.float(0.15, "Retest Tolerance (%)",       group = GRP_TRADE, minval = 0.01, maxval = 1.0, step = 0.05, tooltip = "How close price must come to 55 EMA for valid retest.\n• 0.15% = tight retest\n• 0.50% = loose retest")
+entryColorLong   = input.color(#00E676, "Long Entry Color",  inline = "tc", group = GRP_TRADE)
+entryColorShort  = input.color(#FF5252, "Short Entry Color", inline = "tc", group = GRP_TRADE)
+tpColorInput     = input.color(#00BCD4, "Take Profit Color", inline = "tc2", group = GRP_TRADE)
+slColorInput     = input.color(#FF9800, "Stop Loss Color",   inline = "tc2", group = GRP_TRADE)
+bnrZoneColor     = input.color(#FFD600, "B&R Zone Color",    inline = "tc3", group = GRP_TRADE)
+emaColorSupport  = input.color(#00E676, "EMA Support Color",    inline = "tc4", group = GRP_TRADE)
+emaColorResist   = input.color(#FF5252, "EMA Resistance Color", inline = "tc4", group = GRP_TRADE)
+
+// ══════════════════════════════════════
+// THEME
+// ══════════════════════════════════════
+isDark = switch themeInput
+    "Dark"  => true
+    "Light" => false
+    =>         color.r(chart.bg_color) < 128
+
+TEXT_COLOR     = isDark ? #E0E0E0 : #1A1A1A
+TEXT_MUTED     = isDark ? color.new(#9E9E9E, 0) : color.new(#757575, 0)
+TABLE_BG       = isDark ? color.new(#131722, 5) : color.new(#FFFFFF, 5)
+TABLE_BORDER   = isDark ? color.new(#2A2E39, 0) : color.new(#D0D0D0, 0)
+TABLE_ROW_ALT  = isDark ? color.new(#1C2030, 0) : color.new(#F0F4F8, 0)
+HEADER_BG      = color.new(#2962FF, 0)
+WM_COLOR       = isDark ? color.new(#FFFFFF, 80) : color.new(#000000, 80)
+BULL_BG        = color.new(bullVwapInput, 90)
+BEAR_BG        = color.new(bearVwapInput, 90)
+
+// ══════════════════════════════════════
+// DASHBOARD POSITION
+// ══════════════════════════════════════
+dashPos = switch dashPosStr
+    "Top Left"     => position.top_left
+    "Top Right"    => position.top_right
+    "Bottom Left"  => position.bottom_left
+    "Bottom Right" => position.bottom_right
+    => position.top_right
+
+// ══════════════════════════════════════
+// 55 EMA — DYNAMIC SUPPORT / RESISTANCE
+// ══════════════════════════════════════
+float ema55 = ta.ema(close, emaLenInput)
+
+// EMA acts as support when price is above it, resistance when price is below
+bool emaIsSupport = close > ema55
+color emaColor    = emaIsSupport ? emaColorSupport : emaColorResist
+
+// Plot EMA on chart
+plot(showEmaInput and enableTradeInput ? ema55 : na, "55 EMA Dynamic S/R", color = emaColor, linewidth = 2, style = plot.style_line)
+
+// ══════════════════════════════════════
+// CORE LOGIC
+// ══════════════════════════════════════
+
+b = bar_index
+
+// ── VOLUME PROCESSING ──
+float volMedian = nz(ta.median(volume, 50), 1.0)
+float volSma20  = nz(ta.sma(volume, 20), 1.0)
+float volCap    = math.max(volSma20 * 3.0, 1.0)
+
+getVol(int offset) =>
+    float rawVol   = nz(volume[offset], 0.0)
+    float floorVol = rawVol > 0 ? rawVol : volMedian
+    float capped   = volCapInput ? math.min(floorVol, volCap) : floorVol
+    math.max(capped, 1.0)
+
+// ── PIVOTS ──
+var ph   = float(na)
+var pl   = float(na)
+var phL  = b
+var plL  = b
+var prev = float(na)
+
+int hbars = ta.highestbars(high, prdInput)
+int lbars = ta.lowestbars(low,  prdInput)
+
+bool isSwingHigh = hbars == 0
+bool isSwingLow  = lbars == 0
+
+ph  := isSwingHigh ? high : ph
+pl  := isSwingLow  ? low  : pl
+phL := isSwingHigh ? b    : phL
+plL := isSwingLow  ? b    : plL
+
+dir = phL > plL ? 1 : -1
+
+// ── ADAPTATION ──
+atrLen = 50
+atr    = nz(ta.atr(atrLen), 0.0)
+atrAvg = nz(ta.rma(atr, atrLen), atr)
+ratio  = atrAvg > 0 ? atr / atrAvg : 1.0
+
+aptRaw     = useAdaptInput ? baseAptInput / math.pow(ratio, volBiasInput) : baseAptInput
+aptClamped = math.max(5.0, math.min(300.0, aptRaw))
+aptSeries  = math.round(aptClamped)
+
+// EWMA alpha from half-life
+alphaFromAPT(float apt) =>
+    1.0 - math.exp(-math.log(2.0) / math.max(1.0, apt))
+
+// ── EWMA VWAP STATE ──
+var float p   = srcInput * getVol(0)
+var float vol = getVol(0)
+
+// ── EWMA ATR STATE (for bands — only updated when bands are on) ──
+var float ewmaAtr = atr
+
+// ── PLOT-BASED VWAP STATE ──
+// These hold the current bar's VWAP and ATR values for plot()
+var float currentVwapPlot = na
+var float currentAtrPlot  = na
+
+// ── TRACKING STATE ──
+var string lastSwingStr = "—"
+var int    anchoredDir  = 1
+
+// ══════════════════════════════════════
+// AUTO TRADE STATE (55 EMA Retest Strategy)
+// ══════════════════════════════════════
+// State machine phases:
+//   0 = idle (no swing detected yet)
+//   1 = LONG: Swing detected (any of LL/HL/HH/LH) → watching for candle close ABOVE dynamic resistance (ema55)
+//   2 = LONG: Resistance broken → waiting for price to retest (pullback to) ema55 dynamic support
+//   3 = SHORT: Swing detected (any of LL/HL/HH/LH) → watching for candle close BELOW dynamic support (ema55)
+//   4 = SHORT: Support broken → waiting for price to retest (pullback to) ema55 dynamic resistance
+
+var int    tradePhase        = 0
+var bool   tradeActive       = false
+var int    tradeDir           = 0          // 1 = Long, -1 = Short
+var float  tradeEntry         = na
+var float  tradeSL            = na
+var float  tradeTP            = na         // Single TP = next resistance/support
+var bool   tpHit              = false
+var bool   slHit              = false
+var int    tradeEntryBar      = 0
+
+// Swing level tracking for trade entries
+var float  bnr_resistance     = na   // Dynamic resistance level (swing high)
+var float  bnr_support        = na   // Dynamic support level (swing low)
+var float  bnr_swingLow       = na   // For SL in Long trade
+var float  bnr_swingHigh      = na   // For SL in Short trade
+var float  bnr_nextResistance = na   // TP for Long trade (next swing high)
+var float  bnr_nextSupport    = na   // TP for Short trade (next swing low)
+var bool   bnr_breakConfirmed = false
+var int    bnr_breakBar       = 0
+
+// Trade line/label references (for cleanup)
+var line   entryLine   = na
+var line   slLine      = na
+var line   tpLine      = na
+var label  entryLbl    = na
+var label  slLbl       = na
+var label  tpLbl       = na
+var line   bnrZoneLine = na
+var label  bnrZoneLbl  = na
+var int    totalTrades = 0
+var int    totalWins   = 0
+var int    totalLosses = 0
+
+// Track all recent swing highs and lows for target calculation
+var float  lastSwingHigh1 = na    // most recent swing high
+var float  lastSwingHigh2 = na    // 2nd most recent swing high
+var float  lastSwingLow1  = na    // most recent swing low
+var float  lastSwingLow2  = na    // 2nd most recent swing low
+
+// ── HELPERS ──
+segColor(int d) =>
+    d > 0 ? bullVwapInput : bearVwapInput
+
+// ══════════════════════════════════════
+// MAIN LOGIC
+// ══════════════════════════════════════
+if dir != dir[1]
+    int   x   = dir > 0 ? plL : phL
+    float y   = dir > 0 ? pl  : ph
+    color col = dir > 0 ? highSInput : lowSInput
+
+    // ── Structure label ──
+    string txt = ""
+    if na(prev)
+        txt := dir > 0 ? "IL" : "IH"
+    else if dir > 0
+        txt := pl < prev ? "LL" : (pl > prev ? "HL" : "EL")
+    else
+        txt := ph > prev ? "HH" : (ph < prev ? "LH" : "EH")
+
+    if showPivotsInput
+        label.new(x, y, text = txt,
+             style = dir > 0 ? label.style_label_up : label.style_label_down,
+             color = color.new(col, 20), textcolor = color.white, size = size.small)
+
+    lastSwingStr := txt
+    prev := dir > 0 ? ph[1] : pl[1]
+
+    // ── Track swing highs and lows for target levels ──
+    if dir > 0
+        // A swing low was confirmed (direction flipped to bullish)
+        lastSwingLow2  := lastSwingLow1
+        lastSwingLow1  := pl
+    else
+        // A swing high was confirmed (direction flipped to bearish)
+        lastSwingHigh2 := lastSwingHigh1
+        lastSwingHigh1 := ph
+
+    // ═══════════════════════════════════════════
+    // AUTO TRADE — SWING DETECTION (55 EMA Retest Strategy)
+    // ═══════════════════════════════════════════
+    if enableTradeInput and not tradeActive
+        // Any swing structure detected → set up both long and short watch
+        // We decide direction based on where price is relative to 55 EMA
+
+        if txt == "LL" or txt == "HL" or txt == "HH" or txt == "LH"
+            // Store current swing levels for reference
+            bnr_resistance     := ph            // Current swing high = resistance
+            bnr_support        := pl            // Current swing low  = support
+            bnr_swingLow       := pl            // SL for Long
+            bnr_swingHigh      := ph            // SL for Short
+            bnr_nextResistance := not na(lastSwingHigh2) ? math.max(lastSwingHigh1, lastSwingHigh2) : (not na(lastSwingHigh1) ? lastSwingHigh1 : ph)
+            bnr_nextSupport    := not na(lastSwingLow2)  ? math.min(lastSwingLow1,  lastSwingLow2)  : (not na(lastSwingLow1)  ? lastSwingLow1  : pl)
+            bnr_breakConfirmed := false
+
+            // If price is BELOW 55 EMA → watch for breakout ABOVE (Long setup)
+            if close < ema55
+                tradePhase := 1
+                if showBnRZone
+                    bnrZoneLine.delete()
+                    bnrZoneLbl.delete()
+                    bnrZoneLine := line.new(b, ema55, b + 20, ema55, color = bnrZoneColor, width = 1, style = line.style_dashed)
+                    bnrZoneLbl  := label.new(b, ema55, "⏳ " + txt + " → Watch EMA Break ▲ " + str.tostring(ema55, format.mintick), style = label.style_label_left, color = color.new(bnrZoneColor, 30), textcolor = color.white, size = size.tiny)
+
+            // If price is ABOVE 55 EMA → watch for breakdown BELOW (Short setup)
+            else if close > ema55
+                tradePhase := 3
+                if showBnRZone
+                    bnrZoneLine.delete()
+                    bnrZoneLbl.delete()
+                    bnrZoneLine := line.new(b, ema55, b + 20, ema55, color = bnrZoneColor, width = 1, style = line.style_dashed)
+                    bnrZoneLbl  := label.new(b, ema55, "⏳ " + txt + " → Watch EMA Break ▼ " + str.tostring(ema55, format.mintick), style = label.style_label_left, color = color.new(bnrZoneColor, 30), textcolor = color.white, size = size.tiny)
+
+    // ── LL/HH filter ──
+    bool isFirstSwing = (txt == "IL" or txt == "IH")
+    bool isLLHH       = (txt == "LL" or txt == "HH")
+    bool doAnchor     = isFirstSwing or (onlyLLHHInput ? isLLHH : true)
+
+    // Update trend direction for VWAP color
+    if doAnchor
+        anchoredDir := dir
+
+// ══════════════════════════════════════
+// CONTINUOUS EWMA VWAP UPDATE (every bar, no resets)
+// ══════════════════════════════════════
+// The EWMA runs smoothly on every bar without hard resets.
+// Swing detection only affects the line color (anchoredDir), not the VWAP calculation.
+if not onlyLLHHInput and dir == dir[1]
+    anchoredDir := dir
+
+float a_bar   = alphaFromAPT(aptSeries)
+float v0_bar  = getVol(0)
+float pxv_bar = srcInput * v0_bar
+p   := (1.0 - a_bar) * p + a_bar * pxv_bar
+vol := (1.0 - a_bar) * vol + a_bar * v0_bar
+if showBandsInput
+    ewmaAtr := (1.0 - a_bar) * ewmaAtr + a_bar * atr
+currentVwapPlot := vol > 0 ? p / vol : na
+currentAtrPlot  := ewmaAtr
+
+// Current VWAP for dashboard
+float currentVwap = nz(currentVwapPlot, close)
+
+// ══════════════════════════════════════
+// PLOT VWAP LINE & BANDS (native plot — moves with candles)
+// ══════════════════════════════════════
+color vwapColor = segColor(anchoredDir)
+float bandDev   = showBandsInput ? nz(currentAtrPlot, atr) * bandMultInput : na
+float upperBand = showBandsInput and not na(currentVwapPlot) ? currentVwapPlot + bandDev : na
+float lowerBand = showBandsInput and not na(currentVwapPlot) ? currentVwapPlot - bandDev : na
+
+vwapPlot  = plot(currentVwapPlot, "VWAP",   color = vwapColor, linewidth = lwInput)
+upperPlot = plot(upperBand,       "Upper Band", color = color.new(vwapColor, math.max(bandTranspInput - 20, 0)), linewidth = 1)
+lowerPlot = plot(lowerBand,       "Lower Band", color = color.new(vwapColor, math.max(bandTranspInput - 20, 0)), linewidth = 1)
+fill(upperPlot, lowerPlot, color = color.new(vwapColor, bandTranspInput), title = "Band Fill")
+
+// ══════════════════════════════════════
+// AUTO TRADE — 55 EMA RETEST STATE MACHINE
+// ══════════════════════════════════════
+
+if enableTradeInput and not tradeActive
+    float tolFactor = retestTolerance / 100.0
+    float emaTol    = ema55 * tolFactor
+
+    // ══ Phase 1: LONG setup — waiting for price to break ABOVE 55 EMA (resistance breakout) ══
+    if tradePhase == 1
+        // Extend zone line
+        if showBnRZone and not na(bnrZoneLine)
+            bnrZoneLine.set_x2(b + 20)
+            // Update EMA level on the zone line to keep it dynamic
+            bnrZoneLine.set_y1(ema55)
+            bnrZoneLine.set_y2(ema55)
+        // Check: did candle close ABOVE 55 EMA? (Resistance break)
+        if barstate.isconfirmed and close > ema55
+            tradePhase         := 2                        // Move to retest phase
+            bnr_breakConfirmed := true
+            bnr_breakBar       := b
+            if showBnRZone
+                bnrZoneLine.delete()
+                bnrZoneLbl.delete()
+                bnrZoneLine := line.new(b, ema55, b + 60, ema55, color = entryColorLong, width = 2, style = line.style_solid)
+                bnrZoneLbl  := label.new(b, ema55, "✓ EMA Resistance Broken — Waiting Retest ▼", style = label.style_label_left, color = color.new(entryColorLong, 20), textcolor = color.white, size = size.tiny)
+
+    // ══ Phase 2: LONG setup — waiting for price to RETEST 55 EMA as dynamic support ══
+    if tradePhase == 2 and barstate.isconfirmed
+        float currentEma = ema55
+        float tol2 = currentEma * tolFactor
+        // Extend B&R zone to current EMA position
+        if showBnRZone and not na(bnrZoneLine)
+            bnrZoneLine.set_x2(b + 20)
+            bnrZoneLine.set_y1(currentEma)
+            bnrZoneLine.set_y2(currentEma)
+
+        // Retest condition: candle low touches or dips near 55 EMA, then CLOSES ABOVE it
+        bool retestTouch = low <= (currentEma + tol2) and close > currentEma
+        if retestTouch and b > bnr_breakBar
+            // ✅ RETEST CONFIRMED on 55 EMA Support → ENTER LONG
+            float longEntry = close
+            float longSL    = bnr_swingLow            // SL = recent swing low
+            float risk      = math.abs(longEntry - longSL)
+
+            // TP = Next resistance (swing high above entry)
+            float longTP = na
+            if not na(lastSwingHigh1) and lastSwingHigh1 > longEntry
+                longTP := lastSwingHigh1
+            else if not na(lastSwingHigh2) and lastSwingHigh2 > longEntry
+                longTP := lastSwingHigh2
+            else if not na(bnr_resistance) and bnr_resistance > longEntry
+                longTP := bnr_resistance
+            else
+                longTP := longEntry + risk * 2.0      // fallback: 1:2 RR
+
+            if risk > 0
+                tradeActive    := true
+                tradeDir       := 1
+                tradeEntry     := longEntry
+                tradeSL        := longSL
+                tradeTP        := longTP
+                tpHit := false
+                slHit := false
+                tradeEntryBar  := b
+                totalTrades   += 1
+                tradePhase     := 0
+
+                if showTradeLines
+                    entryLine.delete()
+                    slLine.delete()
+                    tpLine.delete()
+                    entryLine := line.new(b, longEntry, b + 20, longEntry, color = entryColorLong, width = 2, style = line.style_solid)
+                    slLine    := line.new(b, longSL,    b + 20, longSL,    color = slColorInput,   width = 2, style = line.style_dashed)
+                    tpLine    := line.new(b, longTP,    b + 20, longTP,    color = tpColorInput,   width = 2, style = line.style_dotted)
+
+                if showTradeLabels
+                    entryLbl.delete()
+                    slLbl.delete()
+                    tpLbl.delete()
+                    entryLbl := label.new(b, longEntry, "🟢 LONG @ " + str.tostring(longEntry, format.mintick), style = label.style_label_left, color = color.new(entryColorLong, 20), textcolor = color.white, size = size.tiny)
+                    slLbl    := label.new(b, longSL,    "🛑 SL " + str.tostring(longSL, format.mintick),      style = label.style_label_left, color = color.new(slColorInput, 30),   textcolor = color.white, size = size.tiny)
+                    tpLbl    := label.new(b, longTP,    "🎯 TP " + str.tostring(longTP, format.mintick) + " (Next Resistance)", style = label.style_label_left, color = color.new(tpColorInput, 30), textcolor = color.white, size = size.tiny)
+
+                bnrZoneLine.delete()
+                bnrZoneLbl.delete()
+
+        // Timeout: if price drops way below swing low, cancel setup
+        if not na(bnr_swingLow) and close < bnr_swingLow
+            tradePhase := 0
+            bnrZoneLine.delete()
+            bnrZoneLbl.delete()
+
+    // ══ Phase 3: SHORT setup — waiting for price to break BELOW 55 EMA (support breakdown) ══
+    if tradePhase == 3
+        // Extend zone line
+        if showBnRZone and not na(bnrZoneLine)
+            bnrZoneLine.set_x2(b + 20)
+            bnrZoneLine.set_y1(ema55)
+            bnrZoneLine.set_y2(ema55)
+        // Check: did candle close BELOW 55 EMA? (Support break)
+        if barstate.isconfirmed and close < ema55
+            tradePhase         := 4                        // Move to retest phase
+            bnr_breakConfirmed := true
+            bnr_breakBar       := b
+            if showBnRZone
+                bnrZoneLine.delete()
+                bnrZoneLbl.delete()
+                bnrZoneLine := line.new(b, ema55, b + 60, ema55, color = entryColorShort, width = 2, style = line.style_solid)
+                bnrZoneLbl  := label.new(b, ema55, "✓ EMA Support Broken — Waiting Retest ▲", style = label.style_label_left, color = color.new(entryColorShort, 20), textcolor = color.white, size = size.tiny)
+
+    // ══ Phase 4: SHORT setup — waiting for price to RETEST 55 EMA as dynamic resistance ══
+    if tradePhase == 4 and barstate.isconfirmed
+        float currentEma = ema55
+        float tol4 = currentEma * tolFactor
+        // Extend B&R zone to current EMA position
+        if showBnRZone and not na(bnrZoneLine)
+            bnrZoneLine.set_x2(b + 20)
+            bnrZoneLine.set_y1(currentEma)
+            bnrZoneLine.set_y2(currentEma)
+
+        // Retest condition: candle high touches or wicks near 55 EMA, then CLOSES BELOW it
+        bool retestTouch = high >= (currentEma - tol4) and close < currentEma
+        if retestTouch and b > bnr_breakBar
+            // ✅ RETEST CONFIRMED on 55 EMA Resistance → ENTER SHORT
+            float shortEntry = close
+            float shortSL    = bnr_swingHigh          // SL = recent swing high
+            float risk       = math.abs(shortSL - shortEntry)
+
+            // TP = Next support (swing low below entry)
+            float shortTP = na
+            if not na(lastSwingLow1) and lastSwingLow1 < shortEntry
+                shortTP := lastSwingLow1
+            else if not na(lastSwingLow2) and lastSwingLow2 < shortEntry
+                shortTP := lastSwingLow2
+            else if not na(bnr_support) and bnr_support < shortEntry
+                shortTP := bnr_support
+            else
+                shortTP := shortEntry - risk * 2.0    // fallback: 1:2 RR
+
+            if risk > 0
+                tradeActive    := true
+                tradeDir       := -1
+                tradeEntry     := shortEntry
+                tradeSL        := shortSL
+                tradeTP        := shortTP
+                tpHit := false
+                slHit := false
+                tradeEntryBar  := b
+                totalTrades   += 1
+                tradePhase     := 0
+
+                if showTradeLines
+                    entryLine.delete()
+                    slLine.delete()
+                    tpLine.delete()
+                    entryLine := line.new(b, shortEntry, b + 20, shortEntry, color = entryColorShort, width = 2, style = line.style_solid)
+                    slLine    := line.new(b, shortSL,    b + 20, shortSL,    color = slColorInput,    width = 2, style = line.style_dashed)
+                    tpLine    := line.new(b, shortTP,    b + 20, shortTP,    color = tpColorInput,    width = 2, style = line.style_dotted)
+
+                if showTradeLabels
+                    entryLbl.delete()
+                    slLbl.delete()
+                    tpLbl.delete()
+                    entryLbl := label.new(b, shortEntry, "🔴 SHORT @ " + str.tostring(shortEntry, format.mintick), style = label.style_label_left, color = color.new(entryColorShort, 20), textcolor = color.white, size = size.tiny)
+                    slLbl    := label.new(b, shortSL,    "🛑 SL " + str.tostring(shortSL, format.mintick),       style = label.style_label_left, color = color.new(slColorInput, 30),    textcolor = color.white, size = size.tiny)
+                    tpLbl    := label.new(b, shortTP,    "🎯 TP " + str.tostring(shortTP, format.mintick) + " (Next Support)", style = label.style_label_left, color = color.new(tpColorInput, 30), textcolor = color.white, size = size.tiny)
+
+                bnrZoneLine.delete()
+                bnrZoneLbl.delete()
+
+        // Timeout: if price rises back above swing high, cancel setup
+        if not na(bnr_swingHigh) and close > bnr_swingHigh
+            tradePhase := 0
+            bnrZoneLine.delete()
+            bnrZoneLbl.delete()
+
+// ══════════════════════════════════════
+// AUTO TRADE — TP / SL MONITORING
+// ══════════════════════════════════════
+if enableTradeInput and tradeActive
+    if tradeDir == 1   // Long trade monitoring
+        if not tpHit and high >= tradeTP
+            tpHit       := true
+            tradeActive := false
+            totalWins  += 1
+            if showTradeLabels
+                label.new(b, tradeTP, "✓ TARGET HIT 🎯", style = label.style_label_down, color = color.new(tpColorInput, 10), textcolor = color.white, size = size.tiny)
+            // Clean up trade lines and labels to prevent scale shifting
+            entryLine.delete()
+            slLine.delete()
+            tpLine.delete()
+            entryLbl.delete()
+            slLbl.delete()
+            tpLbl.delete()
+        if not slHit and low <= tradeSL
+            slHit       := true
+            tradeActive := false
+            totalLosses += 1
+            if showTradeLabels
+                label.new(b, tradeSL, "✗ SL HIT 🛑", style = label.style_label_up, color = color.new(slColorInput, 10), textcolor = color.white, size = size.tiny)
+            // Clean up trade lines and labels to prevent scale shifting
+            entryLine.delete()
+            slLine.delete()
+            tpLine.delete()
+            entryLbl.delete()
+            slLbl.delete()
+            tpLbl.delete()
+
+    if tradeDir == -1   // Short trade monitoring
+        if not tpHit and low <= tradeTP
+            tpHit       := true
+            tradeActive := false
+            totalWins  += 1
+            if showTradeLabels
+                label.new(b, tradeTP, "✓ TARGET HIT 🎯", style = label.style_label_up, color = color.new(tpColorInput, 10), textcolor = color.white, size = size.tiny)
+            // Clean up trade lines and labels to prevent scale shifting
+            entryLine.delete()
+            slLine.delete()
+            tpLine.delete()
+            entryLbl.delete()
+            slLbl.delete()
+            tpLbl.delete()
+        if not slHit and high >= tradeSL
+            slHit       := true
+            tradeActive := false
+            totalLosses += 1
+            if showTradeLabels
+                label.new(b, tradeSL, "✗ SL HIT 🛑", style = label.style_label_down, color = color.new(slColorInput, 10), textcolor = color.white, size = size.tiny)
+            // Clean up trade lines and labels to prevent scale shifting
+            entryLine.delete()
+            slLine.delete()
+            tpLine.delete()
+            entryLbl.delete()
+            slLbl.delete()
+            tpLbl.delete()
+
+// Extend active trade lines to current bar
+if enableTradeInput and tradeActive and showTradeLines
+    entryLine.set_x2(b + 10)
+    slLine.set_x2(b + 10)
+    tpLine.set_x2(b + 10)
+
+// Trend background
+bgcolor(showBgInput ? (dir > 0 ? BULL_BG : BEAR_BG) : na, title = "Trend BG")
+
+// Label cleanup — aggressively remove old labels to prevent auto-scale distortion
+if array.size(label.all) > 100
+    label.delete(array.shift(label.all))
+
+// Line cleanup — remove excess old lines
+if array.size(line.all) > 30
+    line.delete(array.shift(line.all))
+
+// ══════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════
+if showDashInput and barstate.islast
+    int dashRows = enableTradeInput ? 10 : 5
+    var dashTable = table.new(dashPos, 2, dashRows, TABLE_BG, TABLE_BORDER, 1, TABLE_BORDER, 1)
+
+    table.cell(dashTable, 0, 0, "Gautam Singh AI", text_color = color.white, bgcolor = HEADER_BG, text_size = size.small, text_halign = text.align_center)
+    table.merge_cells(dashTable, 0, 0, 1, 0)
+
+    string trendStr = anchoredDir > 0 ? "Bullish" : "Bearish"
+    color  trendClr = segColor(anchoredDir)
+    table.cell(dashTable, 0, 1, "Trend", text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_BG)
+    table.cell(dashTable, 1, 1, trendStr, text_color = trendClr, text_size = size.small, bgcolor = TABLE_BG)
+
+    string vStr = na(currentVwap) ? "—" : str.tostring(currentVwap, format.mintick)
+    table.cell(dashTable, 0, 2, "VWAP", text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+    table.cell(dashTable, 1, 2, vStr, text_color = TEXT_COLOR, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+
+    table.cell(dashTable, 0, 3, "Last Swing", text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_BG)
+    table.cell(dashTable, 1, 3, lastSwingStr, text_color = TEXT_COLOR, text_size = size.small, bgcolor = TABLE_BG)
+
+    table.cell(dashTable, 0, 4, timeframe.period, text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+    table.cell(dashTable, 1, 4, INDICATOR_VERSION, text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+
+    // ── Trade Info Rows ──
+    if enableTradeInput
+        // 55 EMA value
+        string emaStr = str.tostring(ema55, format.mintick)
+        string emaSR  = emaIsSupport ? "Support ▲" : "Resistance ▼"
+        color  emaClr = emaIsSupport ? emaColorSupport : emaColorResist
+        table.cell(dashTable, 0, 5, "55 EMA",  text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_BG)
+        table.cell(dashTable, 1, 5, emaStr + " (" + emaSR + ")", text_color = emaClr, text_size = size.small, bgcolor = TABLE_BG)
+
+        // Phase status
+        string phaseStr = switch tradePhase
+            1 => "⏳ Wait EMA Break ▲"
+            2 => "⏳ Wait Retest on EMA (L)"
+            3 => "⏳ Wait EMA Break ▼"
+            4 => "⏳ Wait Retest on EMA (S)"
+            => "—"
+        string posStr  = tradeActive ? (tradeDir == 1 ? "LONG ▲" : "SHORT ▼") : phaseStr
+        color  posClr  = tradeActive ? (tradeDir == 1 ? entryColorLong : entryColorShort) : (tradePhase > 0 ? bnrZoneColor : TEXT_MUTED)
+        table.cell(dashTable, 0, 6, "Position",  text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+        table.cell(dashTable, 1, 6, posStr,       text_color = posClr,     text_size = size.small, bgcolor = TABLE_ROW_ALT)
+
+        string entStr  = tradeActive ? str.tostring(tradeEntry, format.mintick) : "—"
+        string slStr_d = tradeActive ? str.tostring(tradeSL, format.mintick) : "—"
+        table.cell(dashTable, 0, 7, "Entry / SL", text_color = TEXT_MUTED,  text_size = size.small, bgcolor = TABLE_BG)
+        table.cell(dashTable, 1, 7, entStr + " / " + slStr_d, text_color = TEXT_COLOR, text_size = size.small, bgcolor = TABLE_BG)
+
+        string tpStr2 = tradeActive ? ("🎯 " + str.tostring(tradeTP, format.mintick)) : "—"
+        table.cell(dashTable, 0, 8, "Target",    text_color = TEXT_MUTED,  text_size = size.small, bgcolor = TABLE_ROW_ALT)
+        table.cell(dashTable, 1, 8, tpStr2,       text_color = tpColorInput, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+
+        string statsStr = str.tostring(totalWins) + "W / " + str.tostring(totalLosses) + "L (" + str.tostring(totalTrades) + ")"
+        table.cell(dashTable, 0, 9, "Win/Loss",   text_color = TEXT_MUTED,  text_size = size.small, bgcolor = TABLE_BG)
+        table.cell(dashTable, 1, 9, statsStr,      text_color = TEXT_COLOR,  text_size = size.small, bgcolor = TABLE_BG)
+
+// ══════════════════════════════════════
+// WATERMARK
+// ══════════════════════════════════════
+if barstate.islast and showWatermarkInput
+    var wmTable = table.new(position = position.bottom_center, columns = 1, rows = 1,
+         bgcolor = color.new(color.black, 100), border_color = color.new(color.black, 100),
+         border_width = 0, frame_color = color.new(color.black, 100), frame_width = 0)
+    table.cell(wmTable, 0, 0, "Gautam Singh", text_color = WM_COLOR,
+         text_size = size.normal, text_halign = text.align_center, bgcolor = color.new(color.black, 100))
+
+// ══════════════════════════════════════
+// ALERTS
+// ══════════════════════════════════════
+bool dirFlipped  = dir != dir[1] and barstate.isconfirmed
+bool wasAnchor   = dirFlipped and (not onlyLLHHInput or lastSwingStr == "LL" or lastSwingStr == "HH" or lastSwingStr == "IL" or lastSwingStr == "IH")
+bool alertBull   = wasAnchor and dir == 1
+bool alertBear   = wasAnchor and dir == -1
+
+string tickerStr = syminfo.tickerid
+string priceStr  = str.tostring(close, format.mintick)
+string tfStr     = timeframe.period
+
+if enableAlertsInput and alertBull
+    string msg = webhookInput
+         ? '{"action":"trend_bull","ticker":"' + tickerStr + '","price":' + str.tostring(close) + ',"tf":"' + tfStr + '","swing":"' + lastSwingStr + '"}'
+         : "🟢 BULLISH | " + tickerStr + " | TF: " + tfStr + " | Price: " + priceStr + " | Swing: " + lastSwingStr
+    alert(msg, alert.freq_once_per_bar_close)
+
+if enableAlertsInput and alertBear
+    string msg = webhookInput
+         ? '{"action":"trend_bear","ticker":"' + tickerStr + '","price":' + str.tostring(close) + ',"tf":"' + tfStr + '","swing":"' + lastSwingStr + '"}'
+         : "🔴 BEARISH | " + tickerStr + " | TF: " + tfStr + " | Price: " + priceStr + " | Swing: " + lastSwingStr
+    alert(msg, alert.freq_once_per_bar_close)
+
+// ── Trade Entry Alerts ──
+if enableAlertsInput and enableTradeInput and tradeActive and b == tradeEntryBar
+    string tradeType = tradeDir == 1 ? "LONG" : "SHORT"
+    string tradeMsg  = webhookInput
+         ? '{"action":"trade_' + str.lower(tradeType) + '","ticker":"' + tickerStr + '","entry":' + str.tostring(tradeEntry) + ',"sl":' + str.tostring(tradeSL) + ',"tp":' + str.tostring(tradeTP) + ',"tf":"' + tfStr + '"}'
+         : "📈 " + tradeType + " ENTRY | " + tickerStr + " | Entry: " + str.tostring(tradeEntry, format.mintick) + " | SL: " + str.tostring(tradeSL, format.mintick) + " | TP: " + str.tostring(tradeTP, format.mintick) + " (Next S/R)"
+    alert(tradeMsg, alert.freq_once_per_bar_close)

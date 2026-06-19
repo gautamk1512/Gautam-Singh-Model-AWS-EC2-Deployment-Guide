@@ -1,0 +1,1213 @@
+//@version=6
+// ══════════════════════════════════════════════════════════
+// GAUTAM SINGH MASTER ALGO
+// ══════════════════════════════════════════════════════════
+// Author: Gautam Singh
+// Combines: Dynamic Swing VWAP, Volumized Order Blocks, Precision Sniper, Smart Money Concepts
+
+indicator(
+    title            = "Gautam Singh Master Algo",
+    shorttitle       = "GS Master Algo",
+    overlay          = true,
+    max_labels_count = 500,
+    max_lines_count  = 500,
+    max_boxes_count  = 500,
+    max_bars_back    = 5000)
+
+// ══════════════════════════════════════
+// 🌟 GAUTAM SINGH MASTER SETTINGS
+// ══════════════════════════════════════
+GS_MASTER_GROUP = "🌟 GAUTAM SINGH MASTER SETTINGS"
+masterModule = input.string("All", "Active Module", options=["All", "VWAP", "Order Blocks", "Precision Sniper", "Smart Money Concepts"], group=GS_MASTER_GROUP, tooltip="Toggle which script to run. Keep 'All' to run everything, or select a specific module to clean your chart.")
+
+runVWAP = masterModule == "All" or masterModule == "VWAP"
+runOB   = masterModule == "All" or masterModule == "Order Blocks"
+runPS   = masterModule == "All" or masterModule == "Precision Sniper"
+runSMC  = masterModule == "All" or masterModule == "Smart Money Concepts"
+
+themeInput = input.string("Auto", "Global Theme", options = ["Auto", "Dark", "Light"], group = GS_MASTER_GROUP, tooltip = "Chart color theme for Gautam Singh Dashboard")
+dashPosStr = input.string("Top Right", "Dashboard Position", options = ["Top Left", "Top Right", "Bottom Left", "Bottom Right"], group = GS_MASTER_GROUP)
+showWatermark = input.bool(true, "Show 'Gautam Singh' Watermark", group = GS_MASTER_GROUP)
+
+isDark = switch themeInput
+    "Dark"  => true
+    "Light" => false
+    => color.r(chart.bg_color) < 128
+
+TEXT_COLOR    = isDark ? #E0E0E0                  : #1A1A1A
+TEXT_MUTED    = isDark ? color.new(#9E9E9E, 0)    : color.new(#757575, 0)
+TEXT_BRIGHT   = isDark ? #FFFFFF                  : #000000
+TABLE_BG      = isDark ? color.new(#131722, 5)    : color.new(#FFFFFF, 5)
+TABLE_BORDER  = isDark ? color.new(#2A2E39, 0)    : color.new(#D0D0D0, 0)
+TABLE_ROW_ALT = isDark ? color.new(#1C2030, 0)    : color.new(#F0F4F8, 0)
+HEADER_BG     = color.new(#2962FF, 0)
+HEADER_TEXT   = #FFFFFF
+LABEL_TEXT    = #FFFFFF
+LINE_SUBTLE   = isDark ? color.new(#555555, 0)    : color.new(#AAAAAA, 0)
+WM_COLOR      = isDark ? color.new(#FFFFFF, 80)   : color.new(#000000, 80)
+
+getDashPos(string pos) =>
+    switch pos
+        "Top Left"     => position.top_left
+        "Top Right"    => position.top_right
+        "Bottom Left"  => position.bottom_left
+        "Bottom Right" => position.bottom_right
+        => position.top_right
+
+safeDiv(float num, float den, float fallback = 0.0) => den != 0 and not na(num) and not na(den) ? num / den : fallback
+safeStr(float val, string fmt = "#.##") => na(val) ? "—" : str.tostring(val, fmt)
+
+b = bar_index
+
+// ══════════════════════════════════════
+// 1. DYNAMIC SWING VWAP (VWAP)
+// ══════════════════════════════════════
+VWAP_GRP_MAIN   = "⚙️ VWAP Main Settings"
+VWAP_GRP_BANDS  = "📐 VWAP Bands"
+VWAP_GRP_VISUAL = "🎨 VWAP Visual"
+VWAP_COLORS     = "🎨 VWAP Colors"
+
+vwapPrdInput          = input.int(55, "Swing Period", minval = 2, group = VWAP_GRP_MAIN)
+vwapBaseAptInput      = input.float(21.0, "Adaptive Price Tracking", minval = 1.0, step = 1.0, group = VWAP_GRP_MAIN)
+vwapUseAdaptInput     = input.bool(false, "Adapt APT by ATR Ratio", group = VWAP_GRP_MAIN)
+vwapVolBiasInput      = input.float(10.0, "Volatility Bias", minval = 0.1, step = 0.1, group = VWAP_GRP_MAIN)
+vwapSrcInput          = input.source(hlc3, "VWAP Source", group = VWAP_GRP_MAIN)
+vwapVolCapInput       = input.bool(true, "Cap Volume Spikes", group = VWAP_GRP_MAIN)
+vwapSmoothAnchorInput = input.bool(true, "Smooth Re-Anchor", group = VWAP_GRP_MAIN)
+vwapOnlyLLHHInput     = input.bool(false, "Only LL / HH Anchors", group = VWAP_GRP_MAIN)
+
+vwapShowBandsInput    = input.bool(true, "Show Bands", group = VWAP_GRP_BANDS)
+vwapBandMultInput     = input.float(0.618, "Band Multiplier", minval = 0.1, step = 0.1, group = VWAP_GRP_BANDS)
+vwapBandTranspInput   = input.int(90, "Band Fill Transparency", minval = 50, maxval = 95, step = 5, group = VWAP_GRP_BANDS)
+
+vwapShowPivotsInput   = input.bool(true, "Show Swing Labels", group = VWAP_GRP_VISUAL)
+vwapShowBgInput       = input.bool(false, "Show VWAP Trend Background", group = VWAP_GRP_VISUAL)
+
+vwapHighSInput    = input.color(color.lime, "Swing Low Labels", inline = "sw", group = VWAP_COLORS)
+vwapLowSInput     = input.color(color.red, "Swing High Labels", inline = "sw", group = VWAP_COLORS)
+vwapBullVwapInput = input.color(color.lime, "Bullish VWAP", inline = "vw", group = VWAP_COLORS)
+vwapBearVwapInput = input.color(color.red, "Bearish VWAP", inline = "vw", group = VWAP_COLORS)
+vwapLwInput       = input.int(2, "Line Width", minval = 1, maxval = 5, inline = "vw", group = VWAP_COLORS)
+
+VWAP_BULL_BG        = color.new(vwapBullVwapInput, 90)
+VWAP_BEAR_BG        = color.new(vwapBearVwapInput, 90)
+
+float vwapVolMedian = nz(ta.median(volume, 50), 1.0)
+float vwapVolSma20  = nz(ta.sma(volume, 20), 1.0)
+float vwapVolCap    = math.max(vwapVolSma20 * 3.0, 1.0)
+
+vwapGetVol(int offset) =>
+    float rawVol   = nz(volume[offset], 0.0)
+    float floorVol = rawVol > 0 ? rawVol : vwapVolMedian
+    float capped   = vwapVolCapInput ? math.min(floorVol, vwapVolCap) : floorVol
+    math.max(capped, 1.0)
+
+var float vwap_ph   = na
+var float vwap_pl   = na
+var int   vwap_phL  = b
+var int   vwap_plL  = b
+var float vwap_prev = na
+
+int vwap_hbars = ta.highestbars(high, vwapPrdInput)
+int vwap_lbars = ta.lowestbars(low,  vwapPrdInput)
+
+bool vwap_isSwingHigh = vwap_hbars == 0
+bool vwap_isSwingLow  = vwap_lbars == 0
+
+vwap_ph  := vwap_isSwingHigh ? high : vwap_ph
+vwap_pl  := vwap_isSwingLow  ? low  : vwap_pl
+vwap_phL := vwap_isSwingHigh ? b    : vwap_phL
+vwap_plL := vwap_isSwingLow  ? b    : vwap_plL
+
+int vwap_dir = vwap_phL > vwap_plL ? 1 : -1
+
+float vwap_atr    = nz(ta.atr(50), 0.0)
+float vwap_atrAvg = nz(ta.rma(vwap_atr, 50), vwap_atr)
+float vwap_ratio  = vwap_atrAvg > 0 ? vwap_atr / vwap_atrAvg : 1.0
+
+float vwapAptRaw     = vwapUseAdaptInput ? vwapBaseAptInput / math.pow(vwap_ratio, vwapVolBiasInput) : vwapBaseAptInput
+float vwapAptClamped = math.max(5.0, math.min(300.0, vwapAptRaw))
+float vwapAptSeries  = math.round(vwapAptClamped)
+
+vwapAlphaFromAPT(float apt) => 1.0 - math.exp(-math.log(2.0) / math.max(1.0, apt))
+
+var float vwap_p   = vwapSrcInput * vwapGetVol(0)
+var float vwap_vol = vwapGetVol(0)
+var float vwap_ewmaAtr = vwap_atr
+
+type vwapDataPoints
+    array<chart.point> points
+    polyline poly = na
+
+var vwapDP = vwapDataPoints.new(array.new<chart.point>())
+var vwapBandContour = vwapDataPoints.new(array.new<chart.point>())
+var vwapUpperPts    = array.new<chart.point>()
+var vwapLowerPts    = array.new<chart.point>()
+
+var string vwapLastSwingStr = "—"
+var int    vwapAnchoredDir  = 1
+
+vwapSegColor(int d) => d > 0 ? vwapBullVwapInput : vwapBearVwapInput
+vwapBandFillColor(int d) => color.new(d > 0 ? vwapBullVwapInput : vwapBearVwapInput, vwapBandTranspInput)
+vwapBandLineColor(int d) => color.new(d > 0 ? vwapBullVwapInput : vwapBearVwapInput, math.max(vwapBandTranspInput - 20, 0))
+
+vwapRebuildBandContour(int d) =>
+    if runVWAP and vwapShowBandsInput and vwapUpperPts.size() > 1
+        if not na(vwapBandContour.poly)
+            vwapBandContour.poly.delete()
+        vwapBandContour.points.clear()
+        for i = 0 to vwapUpperPts.size() - 1
+            vwapBandContour.points.push(vwapUpperPts.get(i))
+        for i = vwapLowerPts.size() - 1 to 0
+            vwapBandContour.points.push(vwapLowerPts.get(i))
+        vwapBandContour.poly := polyline.new(
+             vwapBandContour.points, true, false,
+             line_color = vwapBandLineColor(d),
+             fill_color = vwapBandFillColor(d),
+             line_width = 1)
+
+vwapFinalizeBandContour(int d) =>
+    if runVWAP and vwapShowBandsInput and vwapUpperPts.size() > 1
+        if not na(vwapBandContour.poly)
+            vwapBandContour.poly.delete()
+        vwapBandContour.points.clear()
+        for i = 0 to vwapUpperPts.size() - 1
+            vwapBandContour.points.push(vwapUpperPts.get(i))
+        for i = vwapLowerPts.size() - 1 to 0
+            vwapBandContour.points.push(vwapLowerPts.get(i))
+        polyline.new(vwapBandContour.points, true, false,
+             line_color = vwapBandLineColor(d),
+             fill_color = vwapBandFillColor(d),
+             line_width = 1)
+        vwapBandContour.points.clear()
+        vwapUpperPts.clear()
+        vwapLowerPts.clear()
+
+vwapPushBandPts(int idx, float vwapValArg, float atrVal) =>
+    if runVWAP and vwapShowBandsInput and not na(vwapValArg)
+        float dev = atrVal * vwapBandMultInput
+        vwapUpperPts.push(chart.point.from_index(idx, vwapValArg + dev))
+        vwapLowerPts.push(chart.point.from_index(idx, vwapValArg - dev))
+
+vwapCapBandPts() =>
+    if runVWAP and vwapShowBandsInput and vwapUpperPts.size() > 2000
+        vwapUpperPts.shift()
+        vwapLowerPts.shift()
+
+if vwap_dir != nz(vwap_dir[1], vwap_dir)
+    int   x   = vwap_dir > 0 ? vwap_plL : vwap_phL
+    float y   = vwap_dir > 0 ? vwap_pl  : vwap_ph
+    color col = vwap_dir > 0 ? vwapHighSInput : vwapLowSInput
+
+    string txt = ""
+    if na(vwap_prev)
+        txt := vwap_dir > 0 ? "IL" : "IH"
+    else if vwap_dir > 0
+        txt := vwap_pl < vwap_prev ? "LL" : (vwap_pl > vwap_prev ? "HL" : "EL")
+    else
+        txt := vwap_ph > vwap_prev ? "HH" : (vwap_ph < vwap_prev ? "LH" : "EH")
+
+    if runVWAP and vwapShowPivotsInput
+        label.new(x, y, text = txt,
+             style = vwap_dir > 0 ? label.style_label_up : label.style_label_down,
+             color = color.new(col, 20), textcolor = color.white, size = size.small)
+
+    vwapLastSwingStr := txt
+    vwap_prev := vwap_dir > 0 ? nz(vwap_ph[1], high) : nz(vwap_pl[1], low)
+
+    bool isFirstSwing = (txt == "IL" or txt == "IH")
+    bool isLLHH       = (txt == "LL" or txt == "HH")
+    bool doAnchor     = isFirstSwing or (vwapOnlyLLHHInput ? isLLHH : true)
+
+    if doAnchor
+        color oldSegColor = vwapSegColor(vwapAnchoredDir)
+        int oldDir = vwapAnchoredDir
+        vwapAnchoredDir := vwap_dir
+
+        int barsback = b - x
+        int safeBack = math.min(math.max(barsback, 0), 4999)
+
+        float seedPrice = vwapSrcInput[safeBack]
+        float seedVol   = vwapGetVol(safeBack)
+        vwap_p   := seedPrice * seedVol
+        vwap_vol := seedVol
+
+        if vwapShowBandsInput
+            vwap_ewmaAtr := nz(vwap_atr[safeBack], vwap_atr)
+
+        if runVWAP
+            if not na(vwapDP.poly)
+                vwapDP.poly.delete()
+            polyline.new(vwapDP.points, false, false, line_color = oldSegColor, line_width = vwapLwInput)
+        vwapDP.points.clear()
+        vwapFinalizeBandContour(oldDir)
+
+        float seedVwap = vwap_vol > 0 ? vwap_p / vwap_vol : seedPrice
+        if runVWAP
+            vwapDP.points.push(chart.point.from_index(b - safeBack, seedVwap))
+            vwapPushBandPts(b - safeBack, seedVwap, vwap_ewmaAtr)
+
+        color newSegColor = vwapSegColor(vwapAnchoredDir)
+
+        if safeBack > 1
+            int rampBars = vwapSmoothAnchorInput ? 5 : 0
+            for i = (safeBack - 1) to 0 by 1
+                int barsFromSeed   = safeBack - i
+                float apt_i        = vwapAptSeries[i]
+                float baseAlpha    = vwapAlphaFromAPT(apt_i)
+                float rampFactor   = (rampBars > 0 and barsFromSeed <= rampBars) ? 0.5 + 0.5 * barsFromSeed / rampBars : 1.0
+                float alpha        = baseAlpha * rampFactor
+                float vi           = vwapGetVol(i)
+                float pxv          = vwapSrcInput[i] * vi
+                vwap_p   := (1.0 - alpha) * vwap_p + alpha * pxv
+                vwap_vol := (1.0 - alpha) * vwap_vol + alpha * vi
+                if vwapShowBandsInput
+                    vwap_ewmaAtr := (1.0 - alpha) * vwap_ewmaAtr + alpha * nz(vwap_atr[i], vwap_atr)
+                float vappe = vwap_vol > 0 ? vwap_p / vwap_vol : na
+                if runVWAP
+                    vwapDP.points.push(chart.point.from_index(b - i, vappe))
+                    vwapPushBandPts(b - i, vappe, vwap_ewmaAtr)
+        else if safeBack == 1
+            float apt_i = vwapAptSeries[0]
+            float alpha = vwapAlphaFromAPT(apt_i)
+            if vwapSmoothAnchorInput
+                alpha := alpha * 0.75
+            float v_cur = vwapGetVol(0)
+            float pxv   = vwapSrcInput * v_cur
+            vwap_p   := (1.0 - alpha) * vwap_p + alpha * pxv
+            vwap_vol := (1.0 - alpha) * vwap_vol + alpha * v_cur
+            if vwapShowBandsInput
+                vwap_ewmaAtr := (1.0 - alpha) * vwap_ewmaAtr + alpha * vwap_atr
+            float vappe = vwap_vol > 0 ? vwap_p / vwap_vol : na
+            if runVWAP
+                vwapDP.points.push(chart.point.from_index(b, vappe))
+                vwapPushBandPts(b, vappe, vwap_ewmaAtr)
+
+        if runVWAP
+            vwapDP.poly := polyline.new(vwapDP.points, false, false, line_color = newSegColor, line_width = vwapLwInput)
+        vwapRebuildBandContour(vwapAnchoredDir)
+
+    else
+        float a_f   = vwapAlphaFromAPT(vwapAptSeries)
+        float v0_f  = vwapGetVol(0)
+        float pxv_f = vwapSrcInput * v0_f
+        vwap_p   := (1.0 - a_f) * vwap_p + a_f * pxv_f
+        vwap_vol := (1.0 - a_f) * vwap_vol + a_f * v0_f
+        if vwapShowBandsInput
+            vwap_ewmaAtr := (1.0 - a_f) * vwap_ewmaAtr + a_f * vwap_atr
+        float vap_f = vwap_vol > 0 ? vwap_p / vwap_vol : na
+        
+        if runVWAP
+            color keepColor = vwapSegColor(vwapAnchoredDir)
+            if not na(vwapDP.poly)
+                vwapDP.poly.delete()
+            if vwapDP.points.size() > 4900
+                vwapDP.points.shift()
+            vwapCapBandPts()
+            vwapDP.points.push(chart.point.from_index(b, vap_f))
+            vwapPushBandPts(b, vap_f, vwap_ewmaAtr)
+            vwapDP.poly := polyline.new(vwapDP.points, false, false, line_color = keepColor, line_width = vwapLwInput)
+        vwapRebuildBandContour(vwapAnchoredDir)
+
+else
+    if not vwapOnlyLLHHInput
+        vwapAnchoredDir := vwap_dir
+    float a_n   = vwapAlphaFromAPT(vwapAptSeries)
+    float v0_n  = vwapGetVol(0)
+    float pxv_n = vwapSrcInput * v0_n
+    vwap_p   := (1.0 - a_n) * vwap_p + a_n * pxv_n
+    vwap_vol := (1.0 - a_n) * vwap_vol + a_n * v0_n
+    if vwapShowBandsInput
+        vwap_ewmaAtr := (1.0 - a_n) * vwap_ewmaAtr + a_n * vwap_atr
+    float vap_n = vwap_vol > 0 ? vwap_p / vwap_vol : na
+    
+    if runVWAP
+        color curColor = vwapSegColor(vwapAnchoredDir)
+        if not na(vwapDP.poly)
+            vwapDP.poly.delete()
+        if vwapDP.points.size() > 4900
+            vwapDP.points.shift()
+        vwapCapBandPts()
+        vwapDP.points.push(chart.point.from_index(b, vap_n))
+        vwapPushBandPts(b, vap_n, vwap_ewmaAtr)
+        vwapDP.poly := polyline.new(vwapDP.points, false, false, line_color = curColor, line_width = vwapLwInput)
+    vwapRebuildBandContour(vwapAnchoredDir)
+
+float currentVwap = vwap_vol > 0 ? vwap_p / vwap_vol : close
+
+bgcolor(runVWAP and vwapShowBgInput ? (vwap_dir > 0 ? VWAP_BULL_BG : VWAP_BEAR_BG) : na, title = "VWAP Trend BG")
+
+
+// ══════════════════════════════════════
+// 2. ORDER BLOCKS (OB)
+// ══════════════════════════════════════
+OB_GRP_MAIN = "⚙️ OB Configuration"
+OB_GRP_STYLE = "🎨 OB Style"
+
+obShowInvalidated = input.bool(true, "Show Historic Zones", group = OB_GRP_MAIN)
+obOrderBlockVolumetricInfo = input.bool(true, "Volumetric Info", group = OB_GRP_MAIN)
+obEndMethod = input.string("Wick", "Zone Invalidation", options = ["Wick", "Close"], group = OB_GRP_MAIN)
+obCombineOBs = true
+obMaxATRMult = 3.5
+obSwingLength = input.int(10, 'Swing Length', minval=3, group=OB_GRP_MAIN)
+obZoneCount = input.string("Low", 'Zone Count', options=["High", "Medium", "Low", "One"], group=OB_GRP_MAIN)
+obBullColor = input.color(#08998180, 'Bullish OB', inline='obColor', group=OB_GRP_MAIN)
+obBearColor = input.color(#f2364680, 'Bearish OB', inline='obColor', group=OB_GRP_MAIN)
+
+obBullishCount = obZoneCount == "One" ? 1 : obZoneCount == "Low" ? 3 : obZoneCount == "Medium" ? 5 : 10
+obBearishCount = obZoneCount == "One" ? 1 : obZoneCount == "Low" ? 3 : obZoneCount == "Medium" ? 5 : 10
+
+obTextColor = input.color(#ffffff80, "Text Color", group=OB_GRP_STYLE)
+obExtendZonesByTime = 15 * timeframe.in_seconds(timeframe.period) * 1000
+
+float ob_atr = ta.atr(10)
+
+type fluxOrderBlockInfo
+    float top
+    float bottom
+    float obVolume
+    string obType
+    int startTime
+    float bbVolume = na
+    float obLowVolume = na
+    float obHighVolume = na
+    bool breaker = false
+    int breakTime = na
+    string timeframeStr = ""
+    bool disabled = false
+    string combinedTimeframesStr = na
+    bool combined = false
+
+type fluxOrderBlock
+    fluxOrderBlockInfo info
+    bool isRendered = false
+    box orderBox      = na
+    box breakerBox    = na
+    line orderBoxTop  = na
+    line orderBoxBtm  = na
+    line breakerTop   = na
+    line breakerBtm   = na
+    box orderBoxText  = na
+    box orderBoxPos   = na
+    box orderBoxNeg   = na
+    line orderSep     = na
+    line textSep      = na
+
+type obSwing
+    int x = na    
+    float y = na
+    float swingVolume = na
+    bool crossed = false
+
+var array<fluxOrderBlockInfo> obBullList = array.new<fluxOrderBlockInfo>(0)
+var array<fluxOrderBlockInfo> obBearList = array.new<fluxOrderBlockInfo>(0)
+var array<fluxOrderBlock> obAllList = array.new<fluxOrderBlock>(0)
+
+obMoveBox (_box, _topLeftX, _topLeftY, _bottomRightX, _bottomRightY) =>
+    if not na(_box)
+        box.set_lefttop(_box, _topLeftX, _topLeftY)
+        box.set_rightbottom(_box, _bottomRightX, _bottomRightY)
+
+obCreateBox(boxColor, transparencyX = 1.0) => box.new(na, na, na, na, text_size = size.normal, xloc = xloc.bar_time, extend = extend.none, bgcolor = color.new(boxColor, int(color.t(boxColor) * transparencyX)), text_color = obTextColor, text_halign = text.align_center, border_color = #00000000)
+
+safeDeleteOrderBlock(fluxOrderBlock orderBlockF) =>
+    orderBlockF.isRendered := false
+    if not na(orderBlockF.orderBox)
+        box.delete(orderBlockF.orderBox)
+    if not na(orderBlockF.orderBoxText)
+        box.delete(orderBlockF.orderBoxText)
+    if not na(orderBlockF.orderBoxPos)
+        box.delete(orderBlockF.orderBoxPos)
+    if not na(orderBlockF.orderBoxNeg)
+        box.delete(orderBlockF.orderBoxNeg)
+    if not na(orderBlockF.orderSep)
+        line.delete(orderBlockF.orderSep)
+    if not na(orderBlockF.textSep)
+        line.delete(orderBlockF.textSep)
+
+obRenderOrderBlock(fluxOrderBlock ob) =>
+    if not runOB
+        return
+        
+    fluxOrderBlockInfo info = ob.info
+    ob.isRendered := true
+    color orderColor = info.obType == "Bull" ? obBullColor : obBearColor
+
+    if not (not obShowInvalidated and info.breaker)
+        ob.orderBox := obCreateBox(orderColor, 1.5)
+        if info.combined
+            box.set_bgcolor(ob.orderBox, color.new(orderColor, int(color.t(orderColor)*1.1)))
+        
+        ob.orderBoxText := obCreateBox(color.new(color.white, 100))
+        if obOrderBlockVolumetricInfo
+            ob.orderBoxPos := obCreateBox(obBullColor)
+            ob.orderBoxNeg := obCreateBox(obBearColor)
+            ob.orderSep := line.new(na,na,na,na,xloc.bar_time,extend.none,obTextColor,line.style_dashed,1)
+            ob.textSep := line.new(na,na,na,na,xloc.bar_time,extend.none,obTextColor,line.style_solid,1)
+
+        int zoneSize = na(info.breakTime) ? obExtendZonesByTime : (info.breakTime - info.startTime)
+        if na(info.breakTime)
+            zoneSize := (time + 1) - info.startTime
+
+        int startX = int(info.startTime)
+        int maxEndX = int(info.startTime + zoneSize / 3)
+
+        obMoveBox(ob.orderBox, info.startTime, info.top, info.startTime + zoneSize, info.bottom)
+        obMoveBox(ob.orderBoxText, maxEndX, info.top, info.startTime + zoneSize, info.bottom)
+
+        string perc = str.tostring(int((math.min(info.obHighVolume, info.obLowVolume) / math.max(info.obHighVolume, info.obLowVolume)) * 100.0))
+        string OBText = (na(info.combinedTimeframesStr) ? timeframe.period : info.combinedTimeframesStr) + " OB"
+        box.set_text(ob.orderBoxText, (obOrderBlockVolumetricInfo ? str.tostring(info.obVolume, format.volume) + " (" + perc + "%)\n" : "") + OBText)
+
+        if obOrderBlockVolumetricInfo
+            int curEndXHigh = int(math.ceil((info.obHighVolume / info.obVolume) * (maxEndX - startX) + startX))
+            int curEndXLow = int(math.ceil((info.obLowVolume / info.obVolume) * (maxEndX - startX) + startX))
+
+            obMoveBox(ob.orderBoxPos, startX, info.top, curEndXHigh, (info.bottom + info.top) / 2)
+            obMoveBox(ob.orderBoxNeg, startX, info.bottom, curEndXLow, (info.bottom + info.top) / 2)
+
+            if not na(ob.orderSep)
+                line.set_xy1(ob.orderSep, startX, (info.bottom + info.top) / 2)
+                line.set_xy2(ob.orderSep, maxEndX, (info.bottom + info.top) / 2)
+            if not na(ob.textSep)
+                line.set_xy1(ob.textSep, maxEndX, info.top)
+                line.set_xy2(ob.textSep, maxEndX, info.bottom)
+
+findOBSwings(len) =>
+    var int swingType = 0
+    var obSwing top = obSwing.new(na, na)
+    var obSwing bottom = obSwing.new(na, na)
+    float upper = ta.highest(len)
+    float lower = ta.lowest(len)
+    swingType := high[len] > upper ? 0 : low[len] < lower ? 1 : swingType
+    if swingType == 0 and swingType[1] != 0
+        top := obSwing.new(bar_index[len], high[len], volume[len])
+    if swingType == 1 and swingType[1] != 1
+        bottom := obSwing.new(bar_index[len], low[len], volume[len])
+    [top, bottom]
+
+if bar_index > last_bar_index - 1750
+    [obTop, obBtm] = findOBSwings(obSwingLength)
+    
+    if obBullList.size() > 0
+        for i = obBullList.size() - 1 to 0
+            currentOB = obBullList.get(i)
+            if not currentOB.breaker 
+                if (obEndMethod == "Wick" ? low : math.min(open, close)) < currentOB.bottom
+                    currentOB.breaker := true
+                    currentOB.breakTime := time
+                    currentOB.bbVolume := volume
+            else
+                if high > currentOB.top
+                    obBullList.remove(i)
+
+    if close > obTop.y and not obTop.crossed
+        obTop.crossed := true
+        float boxBtm = high[1]
+        float boxTop = low[1]
+        int boxLoc = time[1]
+        for i = 1 to (bar_index - obTop.x) - 1
+            boxBtm := math.min(low[i], boxBtm)
+            boxTop := boxBtm == low[i] ? high[i] : boxTop
+            boxLoc := boxBtm == low[i] ? time[i] : boxLoc
+        
+        fluxOrderBlockInfo newBlock = fluxOrderBlockInfo.new(boxTop, boxBtm, volume + volume[1] + volume[2], "Bull", boxLoc)
+        newBlock.obLowVolume := volume[2]
+        newBlock.obHighVolume := volume + volume[1]
+        
+        if math.abs(newBlock.top - newBlock.bottom) <= ob_atr * obMaxATRMult
+            obBullList.unshift(newBlock)
+            if obBullList.size() > 30
+                obBullList.pop()
+
+    if obBearList.size() > 0
+        for i = obBearList.size() - 1 to 0
+            currentOB = obBearList.get(i)
+            if not currentOB.breaker 
+                if (obEndMethod == "Wick" ? high : math.max(open, close)) > currentOB.top
+                    currentOB.breaker := true
+                    currentOB.breakTime := time
+                    currentOB.bbVolume := volume
+            else
+                if low < currentOB.bottom
+                    obBearList.remove(i)
+
+    if close < obBtm.y and not obBtm.crossed
+        obBtm.crossed := true
+        float boxBtm = low[1]
+        float boxTop = high[1]
+        int boxLoc = time[1]
+        for i = 1 to (bar_index - obBtm.x) - 1
+            boxTop := math.max(high[i], boxTop)
+            boxBtm := boxTop == high[i] ? low[i] : boxBtm
+            boxLoc := boxTop == high[i] ? time[i] : boxLoc
+
+        fluxOrderBlockInfo newBlock = fluxOrderBlockInfo.new(boxTop, boxBtm, volume + volume[1] + volume[2], "Bear", boxLoc)
+        newBlock.obLowVolume := volume + volume[1]
+        newBlock.obHighVolume := volume[2]
+
+        if math.abs(newBlock.top - newBlock.bottom) <= ob_atr * obMaxATRMult
+            obBearList.unshift(newBlock)
+            if obBearList.size() > 30
+                obBearList.pop()
+
+if barstate.isconfirmed and runOB
+    if obAllList.size() > 0
+        for i = 0 to obAllList.size() - 1
+            safeDeleteOrderBlock(obAllList.get(i))
+    obAllList.clear()    
+
+    if obBullList.size() > 0
+        for j = 0 to math.min(obBullList.size() - 1, obBullishCount - 1)
+            f = obBullList.get(j)
+            fluxOrderBlockInfo tmp = fluxOrderBlockInfo.new(f.top, f.bottom, f.obVolume, f.obType, f.startTime)
+            tmp.obLowVolume := f.obLowVolume ; tmp.obHighVolume := f.obHighVolume ; tmp.breaker := f.breaker ; tmp.breakTime := f.breakTime ; tmp.timeframeStr := timeframe.period
+            obAllList.unshift(fluxOrderBlock.new(tmp))
+
+    if obBearList.size() > 0
+        for j = 0 to math.min(obBearList.size() - 1, obBearishCount - 1)
+            f = obBearList.get(j)
+            fluxOrderBlockInfo tmp = fluxOrderBlockInfo.new(f.top, f.bottom, f.obVolume, f.obType, f.startTime)
+            tmp.obLowVolume := f.obLowVolume ; tmp.obHighVolume := f.obHighVolume ; tmp.breaker := f.breaker ; tmp.breakTime := f.breakTime ; tmp.timeframeStr := timeframe.period
+            obAllList.unshift(fluxOrderBlock.new(tmp))
+
+    // Simple overlapping merge ignoring advanced polygon intersec
+    if obAllList.size() > 0
+        for i = 0 to obAllList.size() - 1
+            curOB = obAllList.get(i)
+            if not curOB.info.disabled
+                obRenderOrderBlock(curOB)
+
+// ══════════════════════════════════════
+// 3. PRECISION SNIPER LOGIC
+// ══════════════════════════════════════
+PS_GRP_MAIN   = "⚙️ PS Main Settings"
+PS_GRP_ENTRY  = "🎯 PS Entry Engine"
+PS_GRP_RISK   = "🛡️ PS Risk Management"
+PS_GRP_VISUAL = "🎨 PS Visual Settings"
+PS_GRP_COLORS = "🎨 PS Colors"
+
+psSourceInput = input.source(close, "Source", group = PS_GRP_MAIN)
+psHtfInput    = input.timeframe("", "HTF Trend Filter", group = PS_GRP_MAIN)
+psPresetInput = input.string("Default", "Preset", options = ["Conservative", "Default", "Aggressive", "Scalping"], group = PS_GRP_MAIN)
+
+psEmaFastLenInput  = input.int(9, "EMA Fast Length", minval = 3, maxval = 50, group = PS_GRP_ENTRY)
+psEmaSlowLenInput  = input.int(21, "EMA Slow Length", minval = 10, maxval = 100, group = PS_GRP_ENTRY)
+psEmaTrendLenInput = input.int(55, "EMA Trend Length", minval = 20, maxval = 200, group = PS_GRP_ENTRY)
+psMinScoreInput    = input.int(5, "Min Confluence Score", minval = 1, maxval = 10, group = PS_GRP_ENTRY)
+psRsiLenInput      = input.int(13, "RSI Length", minval = 5, maxval = 30, group = PS_GRP_ENTRY)
+
+psAtrLenInput       = input.int(14, "ATR Length", minval = 5, maxval = 50, group = PS_GRP_RISK)
+psSlMultInput       = input.float(1.5, "SL ATR Multiplier", minval = 0.5, step = 0.1, group = PS_GRP_RISK)
+psTp1MultInput      = input.float(1.0, "TP1 Risk:Reward", minval = 0.5, step = 0.1, group = PS_GRP_RISK)
+psTp2MultInput      = input.float(2.0, "TP2 Risk:Reward", minval = 1.0, step = 0.1, group = PS_GRP_RISK)
+psTp3MultInput      = input.float(3.0, "TP3 Risk:Reward", minval = 1.5, step = 0.5, group = PS_GRP_RISK)
+psUseTrailInput     = input.bool(true, "Enable Trailing Stop", group = PS_GRP_RISK)
+psUseStructSLInput  = input.bool(true, "Structure-Based SL", group = PS_GRP_RISK)
+psSwingLookbackInp  = input.int(10, "Swing Lookback", minval = 3, maxval = 30, group = PS_GRP_RISK)
+
+psShowSignalsInput  = input.bool(true, "Show Buy/Sell Signals", group = PS_GRP_VISUAL)
+psSignalSizeInput   = input.string("Small", "Signal Size", options = ["Tiny", "Small", "Normal", "Large", "Huge"], group = PS_GRP_VISUAL)
+psShowTPSLInput     = input.bool(true, "Show TP/SL Lines", group = PS_GRP_VISUAL)
+psShowRibbonInput   = input.bool(true, "Show EMA Ribbon", group = PS_GRP_VISUAL)
+psShowTrailInput    = input.bool(true, "Show Trailing Stop", group = PS_GRP_VISUAL)
+psShowBgInput       = input.bool(false, "Show Trend Background", group = PS_GRP_VISUAL)
+psLabelOffsetInput  = input.int(20, "Label Offset (bars)", minval = 5, maxval = 50, group = PS_GRP_VISUAL)
+
+psBullColor    = input.color(#00E676, "Bull", inline = "psColors", group = PS_GRP_COLORS)
+psBearColor    = input.color(#FF5252, "Bear", inline = "psColors", group = PS_GRP_COLORS)
+psNeutralColor = input.color(#FFEB3B, "Neutral", inline = "psColors", group = PS_GRP_COLORS)
+
+int psEffectiveScore = switch psPresetInput
+    "Conservative" => math.max(psMinScoreInput, 7)
+    "Aggressive"   => math.min(psMinScoreInput, 3)
+    "Scalping"     => math.min(psMinScoreInput, 4)
+    => psMinScoreInput
+
+float psEffectiveSL = switch psPresetInput
+    "Conservative" => math.max(psSlMultInput, 2.0)
+    "Scalping"     => math.min(psSlMultInput, 1.0)
+    => psSlMultInput
+
+int PS_WARMUP_BARS = math.max(psEmaTrendLenInput, 50)
+bool psIsWarmedUp = bar_index >= PS_WARMUP_BARS
+string psSigSize = getSignalSize(psSignalSizeInput)
+
+float psEmaFast  = nz(ta.ema(psSourceInput, psEmaFastLenInput), close)
+float psEmaSlow  = nz(ta.ema(psSourceInput, psEmaSlowLenInput), close)
+float psEmaTrend = nz(ta.ema(psSourceInput, psEmaTrendLenInput), close)
+
+float psAtrVal = nz(ta.atr(psAtrLenInput), high - low)
+float psRsiVal = nz(ta.rsi(psSourceInput, psRsiLenInput), 50.0)
+
+[psMacdLine, psSignalLine, psHistLine] = ta.macd(psSourceInput, 12, 26, 9)
+float psMacdVal    = nz(psMacdLine, 0.0)
+float psMacdSig    = nz(psSignalLine, 0.0)
+float psMacdHist   = nz(psHistLine, 0.0)
+
+bool psHasVolume    = nz(volume, 0) > 0
+float psVolSma      = psHasVolume ? nz(ta.sma(volume, 20), volume) : 0.0
+bool psVolAboveAvg  = psHasVolume ? volume > psVolSma * 1.2 : true
+
+[psDiPlus, psDiMinus, psAdxVal] = ta.dmi(14, 14)
+float psSafeAdx     = nz(psAdxVal, 0.0)
+float psSafeDiPlus  = nz(psDiPlus, 0.0)
+float psSafeDiMinus = nz(psDiMinus, 0.0)
+bool psStrongTrend  = psSafeAdx > 20
+
+float psVwapVal = nz(ta.vwap(hlc3), close)
+
+float psAtrSmaGlobal = nz(ta.sma(psAtrVal, 42), psAtrVal)
+float psVolRatio     = safeDiv(psAtrVal, psAtrSmaGlobal, 1.0)
+string psVolRegime   = psVolRatio > 1.3 ? "High" : psVolRatio < 0.7 ? "Low" : "Normal"
+
+float psHtfEmaFast = request.security(syminfo.tickerid, psHtfInput, ta.ema(psSourceInput, psEmaFastLenInput)[1], barmerge.gaps_off, barmerge.lookahead_on)
+float psHtfEmaSlow = request.security(syminfo.tickerid, psHtfInput, psEmaSlow, barmerge.gaps_off, barmerge.lookahead_on)
+float psSafeHtfFast = nz(psHtfEmaFast, psEmaFast)
+float psSafeHtfSlow = nz(psHtfEmaSlow, psEmaSlow)
+int psHtfBias = psSafeHtfFast > psSafeHtfSlow ? 1 : psSafeHtfFast < psSafeHtfSlow ? -1 : 0
+
+float psRecentSwingLow  = low
+float psRecentSwingHigh = high
+
+float psBullScore = 0.0
+psBullScore += psEmaFast > psEmaSlow                            ? 1.0 : 0.0
+psBullScore += close > psEmaTrend                             ? 1.0 : 0.0
+psBullScore += psRsiVal > 50 and psRsiVal < 75                  ? 1.0 : 0.0
+psBullScore += psMacdHist > 0                                 ? 1.0 : 0.0
+psBullScore += psMacdVal > psMacdSig                            ? 1.0 : 0.0
+psBullScore += close > psVwapVal                              ? 1.0 : 0.0
+psBullScore += psVolAboveAvg                                  ? 1.0 : 0.0
+psBullScore += psStrongTrend and psSafeDiPlus > psSafeDiMinus     ? 1.0 : 0.0
+psBullScore += psHtfBias == 1                                 ? 1.5 : 0.0
+psBullScore += close > psEmaFast                              ? 0.5 : 0.0
+
+float psBearScore = 0.0
+psBearScore += psEmaFast < psEmaSlow                            ? 1.0 : 0.0
+psBearScore += close < psEmaTrend                             ? 1.0 : 0.0
+psBearScore += psRsiVal < 50 and psRsiVal > 25                  ? 1.0 : 0.0
+psBearScore += psMacdHist < 0                                 ? 1.0 : 0.0
+psBearScore += psMacdVal < psMacdSig                            ? 1.0 : 0.0
+psBearScore += close < psVwapVal                              ? 1.0 : 0.0
+psBearScore += psVolAboveAvg                                  ? 1.0 : 0.0
+psBearScore += psStrongTrend and psSafeDiMinus > psSafeDiPlus     ? 1.0 : 0.0
+psBearScore += psHtfBias == -1                                ? 1.5 : 0.0
+psBearScore += close < psEmaFast                              ? 0.5 : 0.0
+
+bool psEmaBullCross = ta.crossover(psEmaFast, psEmaSlow)
+bool psEmaBearCross = ta.crossunder(psEmaFast, psEmaSlow)
+
+bool psBullMomentum = close > psEmaFast and close > psEmaSlow
+bool psBearMomentum = close < psEmaFast and close < psEmaSlow
+
+bool psRawBuy  = psEmaBullCross and psBullMomentum and psRsiVal < 75 and psBullScore >= psEffectiveScore
+bool psRawSell = psEmaBearCross and psBearMomentum and psRsiVal > 25 and psBearScore >= psEffectiveScore
+
+var int psLastDirection = 0
+bool psBuyCondition  = psRawBuy  and psLastDirection != 1
+bool psSellCondition = psRawSell and psLastDirection != -1
+
+bool psConfirmedBuy  = psBuyCondition  and barstate.isconfirmed and psIsWarmedUp
+bool psConfirmedSell = psSellCondition and barstate.isconfirmed and psIsWarmedUp
+
+if psConfirmedBuy and psConfirmedSell
+    psConfirmedSell := false
+
+if psConfirmedBuy
+    psLastDirection := 1
+else if psConfirmedSell
+    psLastDirection := -1
+
+var float psEntryPrice  = na
+var float psSlPrice     = na
+var float psTp1Price    = na
+var float psTp2Price    = na
+var float psTp3Price    = na
+var float psTrailPrice  = na
+var bool  psTp1Hit      = false
+var bool  psTp2Hit      = false
+var bool  psTp3Hit      = false
+var bool  psSlHit       = false
+var int   psTradeDir    = 0
+var int   psEntryBar    = 0
+
+psCalcSL(bool isLong, float entry, float atrSL) =>
+    float atrStop = isLong ? entry - atrSL : entry + atrSL
+    if psUseStructSLInput
+        float structStop = isLong ? psRecentSwingLow - psAtrVal * 0.2 : psRecentSwingHigh + psAtrVal * 0.2
+        float finalStop = isLong ? math.max(atrStop, structStop) : math.min(atrStop, structStop)
+        float minDist = psAtrVal * 0.5
+        float dist = math.abs(entry - finalStop)
+        dist < minDist ? (isLong ? entry - minDist : entry + minDist) : finalStop
+    else
+        atrStop
+
+if psConfirmedBuy
+    psEntryPrice := close
+    psTradeDir   := 1
+    float risk   = psAtrVal * psEffectiveSL
+    psSlPrice    := psCalcSL(true, close, risk)
+    float tradeR = math.abs(close - psSlPrice)
+    psTp1Price   := close + tradeR * psTp1MultInput
+    psTp2Price   := close + tradeR * psTp2MultInput
+    psTp3Price   := close + tradeR * psTp3MultInput
+    psTrailPrice := psSlPrice
+    psTp1Hit     := false
+    psTp2Hit     := false
+    psTp3Hit     := false
+    psSlHit      := false
+    psEntryBar   := bar_index
+
+if psConfirmedSell
+    psEntryPrice := close
+    psTradeDir   := -1
+    float risk   = psAtrVal * psEffectiveSL
+    psSlPrice    := psCalcSL(false, close, risk)
+    float tradeR = math.abs(close - psSlPrice)
+    psTp1Price   := close - tradeR * psTp1MultInput
+    psTp2Price   := close - tradeR * psTp2MultInput
+    psTp3Price   := close - tradeR * psTp3MultInput
+    psTrailPrice := psSlPrice
+    psTp1Hit     := false
+    psTp2Hit     := false
+    psTp3Hit     := false
+    psSlHit      := false
+    psEntryBar   := bar_index
+
+bool psCanCheck = bar_index > psEntryBar and psTradeDir != 0 and not psSlHit
+
+if psCanCheck and psTradeDir == 1
+    float preTrail = psTrailPrice
+    if high >= psTp1Price and not psTp1Hit
+        psTp1Hit := true
+        if psUseTrailInput
+            psTrailPrice := psEntryPrice
+    if high >= psTp2Price and not psTp2Hit
+        psTp2Hit := true
+        if psUseTrailInput
+            psTrailPrice := psTp1Price
+    if high >= psTp3Price and not psTp3Hit
+        psTp3Hit := true
+        if psUseTrailInput
+            psTrailPrice := psTp2Price
+    if low <= nz(preTrail, psSlPrice)
+        psSlHit := true
+
+if psCanCheck and psTradeDir == -1
+    float preTrail = psTrailPrice
+    if low <= psTp1Price and not psTp1Hit
+        psTp1Hit := true
+        if psUseTrailInput
+            psTrailPrice := psEntryPrice
+    if low <= psTp2Price and not psTp2Hit
+        psTp2Hit := true
+        if psUseTrailInput
+            psTrailPrice := psTp1Price
+    if low <= psTp3Price and not psTp3Hit
+        psTp3Hit := true
+        if psUseTrailInput
+            psTrailPrice := psTp2Price
+    if high >= nz(preTrail, psSlPrice)
+        psSlHit := true
+
+bool psTradeActive = psTradeDir != 0 and not psSlHit
+string psTradeStatus = "No Trade"
+if psTradeActive and psTp3Hit
+    psTradeStatus := "TP3 ✓ — Trail"
+else if psTradeActive and psTp2Hit
+    psTradeStatus := "TP2 ✓ — Trail"
+else if psTradeActive and psTp1Hit
+    psTradeStatus := "TP1 ✓ — Trail"
+else if psTradeActive
+    psTradeStatus := "Active"
+
+pFastLine = plot(runPS and psShowRibbonInput ? psEmaFast : na, display=display.none)
+pSlowLine = plot(runPS and psShowRibbonInput ? psEmaSlow : na, display=display.none)
+fill(pFastLine, pSlowLine, color = runPS and psEmaFast > psEmaSlow ? color.new(psBullColor, 88) : color.new(psBearColor, 88))
+
+bgcolor(runPS and psShowBgInput ? (psEmaFast > psEmaSlow and close > psEmaTrend ? color.new(psBullColor, 94) : psEmaFast < psEmaSlow and close < psEmaTrend ? color.new(psBearColor, 94) : na) : na)
+
+if runPS and psShowSignalsInput and psConfirmedBuy
+    label.new(bar_index, low, "Long", color = psBullColor, textcolor = LABEL_TEXT, style = label.style_label_up, size = psSigSize, yloc = yloc.belowbar)
+if runPS and psShowSignalsInput and psConfirmedSell
+    label.new(bar_index, high, "Short", color = psBearColor, textcolor = LABEL_TEXT, style = label.style_label_down, size = psSigSize, yloc = yloc.abovebar)
+
+var line psLineEntry = na, var line psLineSL = na
+var line psLineTP1 = na, var line psLineTP2 = na, var line psLineTP3 = na, var line psLineTrail = na
+var label psLbEntry = na, var label psLbSL = na
+var label psLbTP1 = na, var label psLbTP2 = na, var label psLbTP3 = na, var label psLbTrail = na
+var bool psHasDrawings = false
+
+if runPS and (psConfirmedBuy or psConfirmedSell) and psShowTPSLInput
+    line.delete(psLineEntry), line.delete(psLineSL)
+    line.delete(psLineTP1), line.delete(psLineTP2), line.delete(psLineTP3), line.delete(psLineTrail)
+    label.delete(psLbEntry), label.delete(psLbSL)
+    label.delete(psLbTP1), label.delete(psLbTP2), label.delete(psLbTP3), label.delete(psLbTrail)
+
+    int lineEnd  = bar_index + psLabelOffsetInput
+    int labelPos = bar_index + psLabelOffsetInput + 2
+
+    color C_ENTRY = color.new(#2979FF, 0)
+    color C_SL = color.new(#FF1744, 0)
+    color C_TP = color.new(#00E676, 0)
+    color C_TRAIL = color.new(#FF9800, 0)
+
+    psLineEntry := line.new(bar_index, psEntryPrice, lineEnd, psEntryPrice, color = C_ENTRY, width = 2, style = line.style_solid)
+    psLineSL    := line.new(bar_index, psSlPrice, lineEnd, psSlPrice, color = C_SL, width = 2, style = line.style_solid)
+    psLineTP1   := line.new(bar_index, psTp1Price, lineEnd, psTp1Price, color = C_TP, width = 1, style = line.style_dashed)
+    psLineTP2   := line.new(bar_index, psTp2Price, lineEnd, psTp2Price, color = C_TP, width = 1, style = line.style_dashed)
+    psLineTP3   := line.new(bar_index, psTp3Price, lineEnd, psTp3Price, color = C_TP, width = 2, style = line.style_dashed)
+
+    if psShowTrailInput and psUseTrailInput
+        psLineTrail := line.new(bar_index, psTrailPrice, lineEnd, psTrailPrice, color = C_TRAIL, width = 1, style = line.style_dotted)
+        psLbTrail   := label.new(labelPos + 10, psTrailPrice, "TRAIL " + str.tostring(psTrailPrice, format.mintick), color = color.new(C_TRAIL, 60), textcolor = TEXT_BRIGHT, style = label.style_label_left, size = size.small)
+
+    psLbEntry := label.new(labelPos, psEntryPrice, "ENTRY " + str.tostring(psEntryPrice, format.mintick), color = color.new(C_ENTRY, 60), textcolor = TEXT_BRIGHT, style = label.style_label_left, size = size.small)
+    psLbSL    := label.new(labelPos, psSlPrice, "SL " + str.tostring(psSlPrice, format.mintick), color = color.new(C_SL, 60), textcolor = TEXT_BRIGHT, style = label.style_label_left, size = size.small)
+    psLbTP1   := label.new(labelPos, psTp1Price, "TP1 " + str.tostring(psTp1Price, format.mintick), color = color.new(C_TP, 60), textcolor = TEXT_BRIGHT, style = label.style_label_left, size = size.small)
+    psLbTP2   := label.new(labelPos, psTp2Price, "TP2 " + str.tostring(psTp2Price, format.mintick), color = color.new(C_TP, 60), textcolor = TEXT_BRIGHT, style = label.style_label_left, size = size.small)
+    psLbTP3   := label.new(labelPos, psTp3Price, "TP3 " + str.tostring(psTp3Price, format.mintick), color = color.new(C_TP, 60), textcolor = TEXT_BRIGHT, style = label.style_label_left, size = size.small)
+    psHasDrawings := true
+
+if runPS and psShowTPSLInput and psHasDrawings and not (psConfirmedBuy or psConfirmedSell)
+    int newLineEnd  = bar_index + psLabelOffsetInput
+    int newLabelPos = bar_index + psLabelOffsetInput + 2
+    if not na(psLineEntry)
+        line.set_x2(psLineEntry, newLineEnd)
+    if not na(psLineSL)
+        line.set_x2(psLineSL, newLineEnd)
+    if not na(psLineTP1)
+        line.set_x2(psLineTP1, newLineEnd)
+    if not na(psLineTP2)
+        line.set_x2(psLineTP2, newLineEnd)
+    if not na(psLineTP3)
+        line.set_x2(psLineTP3, newLineEnd)
+
+    if not na(psLbEntry)
+        label.set_x(psLbEntry, newLabelPos)
+    if not na(psLbSL)
+        label.set_x(psLbSL, newLabelPos)
+    if not na(psLbTP1)
+        label.set_x(psLbTP1, newLabelPos)
+    if not na(psLbTP2)
+        label.set_x(psLbTP2, newLabelPos)
+    if not na(psLbTP3)
+        label.set_x(psLbTP3, newLabelPos)
+
+    if psShowTrailInput and psUseTrailInput
+        if not na(psLineTrail)
+            line.set_x2(psLineTrail, newLineEnd)
+            line.set_y1(psLineTrail, psTrailPrice)
+            line.set_y2(psLineTrail, psTrailPrice)
+        if not na(psLbTrail)
+            label.set_xy(psLbTrail, newLabelPos + 10, psTrailPrice)
+            label.set_text(psLbTrail, "TRAIL " + str.tostring(psTrailPrice, format.mintick))
+
+if runPS and psShowTPSLInput and not na(psLineTP1) and psTp1Hit
+    line.set_color(psLineTP1, color.new(#40E0D0, 0))
+    line.set_style(psLineTP1, line.style_solid)
+if runPS and psShowTPSLInput and not na(psLineTP2) and psTp2Hit
+    line.set_color(psLineTP2, color.new(#40E0D0, 0))
+    line.set_style(psLineTP2, line.style_solid)
+if runPS and psShowTPSLInput and not na(psLineTP3) and psTp3Hit
+    line.set_color(psLineTP3, color.new(#40E0D0, 0))
+    line.set_style(psLineTP3, line.style_solid)
+
+
+// ══════════════════════════════════════
+// 4. SMART MONEY CONCEPTS LOGIC
+// ══════════════════════════════════════
+SMC_SMART_GROUP = "⚙️ SMC General"
+SMC_INTERNAL_GROUP = "SMC Internal Structure"
+SMC_SWING_GROUP = "SMC Swing Structure"
+SMC_BLOCKS_GROUP = "SMC Order Blocks"
+SMC_EQUAL_GROUP = "SMC EQH/EQL"
+SMC_GAPS_GROUP = "SMC Fair Value Gaps"
+SMC_LEVELS_GROUP = "SMC Highs & Lows MTF"
+SMC_ZONES_GROUP = "SMC Premium & Discount"
+
+smcModeInput            = input.string("Historical", "Mode", options=["Historical", "Present"], group=SMC_SMART_GROUP)
+smcStyleInput           = input.string("Colored", "Style", options=["Colored", "Monochrome"], group=SMC_SMART_GROUP)
+smcShowTrendInput       = input.bool(false, "Color Candles", group=SMC_SMART_GROUP)
+smcShowInternalsInput   = input.bool(true, "Show Internal Structure", group=SMC_INTERNAL_GROUP)
+smcInternalBull         = input.string("All", "Bullish Structure", options=["All", "BOS", "CHoCH"], group=SMC_INTERNAL_GROUP, inline='ibull')
+smcInternalBullColor    = input.color(#089981, "", group=SMC_INTERNAL_GROUP, inline='ibull')
+smcInternalBear         = input.string("All", "Bearish Structure", options=["All", "BOS", "CHoCH"], group=SMC_INTERNAL_GROUP, inline='ibear')
+smcInternalBearColor    = input.color(#F23645, "", group=SMC_INTERNAL_GROUP, inline='ibear')
+
+smcInternalLabelSz      = input.string("Tiny", "Internal Label Size", options=["Tiny", "Small", "Normal"], group=SMC_INTERNAL_GROUP)
+smcShowStructureInput   = input.bool(true, "Show Swing Structure", group=SMC_SWING_GROUP)
+smcSwingBull            = input.string("All", "Bullish Structure", options=["All", "BOS", "CHoCH"], group=SMC_SWING_GROUP, inline='bull')
+smcSwingBullColor       = input.color(#089981, "", group=SMC_SWING_GROUP, inline='bull')
+smcSwingBear            = input.string("All", "Bearish Structure", options=["All", "BOS", "CHoCH"], group=SMC_SWING_GROUP, inline='bear')
+smcSwingBearColor       = input.color(#F23645, "", group=SMC_SWING_GROUP, inline='bear')
+
+smcShowEqInput          = input.bool(true, "Equal High/Low", group=SMC_EQUAL_GROUP)
+smcEqLenInput           = input.int(3, "Bars Confirmation", group=SMC_EQUAL_GROUP)
+smcEqThreshInput        = input.float(0.1, "Threshold", group=SMC_EQUAL_GROUP, step=0.1)
+
+smcShowFvgInput         = input.bool(false, "Fair Value Gaps", group=SMC_GAPS_GROUP)
+smcFvgBullishColor      = input.color(color.new(#00ff68, 70), "Bullish FVG", group=SMC_GAPS_GROUP)
+smcFvgBearishColor      = input.color(color.new(#ff0008, 70), "Bearish FVG", group=SMC_GAPS_GROUP)
+smcFvgExtendInput       = input.int(1, "Extend FVG", group=SMC_GAPS_GROUP)
+
+smcShowZonesInput       = input.bool(false, "Premium/Discount Zones", group=SMC_ZONES_GROUP)
+smcPremiumColor         = input.color(#F23645, "Premium Zone", group=SMC_ZONES_GROUP)
+smcDiscountColor        = input.color(#089981, "Discount Zone", group=SMC_ZONES_GROUP)
+
+type smcPivot
+    float currentLevel
+    float lastLevel
+    bool crossed
+    int barTime     = time
+    int barIndex    = bar_index
+
+type smcOrderBlock
+    float barHigh
+    float barLow
+    int barTime    
+    int bias
+
+type smcTrailingExtremes
+    float top
+    float bottom
+    int barTime
+    int barIndex
+    int lastTopTime
+    int lastBottomTime
+
+type smcFairValueGap
+    float top
+    float bottom
+    int bias
+    box topBox
+    box bottomBox
+
+type smcEqualDisplay
+    line l_ine   = na
+    label l_abel = na
+
+type smcTrend
+    int bias    
+
+var smcPivot smcSwingHigh    = smcPivot.new(na,na,false)
+var smcPivot smcSwingLow     = smcPivot.new(na,na,false)
+var smcPivot smcInternalHigh = smcPivot.new(na,na,false)
+var smcPivot smcInternalLow  = smcPivot.new(na,na,false)
+var smcPivot smcEqHigh       = smcPivot.new(na,na,false)
+var smcPivot smcEqLow        = smcPivot.new(na,na,false)
+
+var smcEqualDisplay smcEqHighDisp = smcEqualDisplay.new()
+var smcEqualDisplay smcEqLowDisp  = smcEqualDisplay.new()
+
+var smcTrend smcSwingTrend    = smcTrend.new(0)
+var smcTrend smcInternalTrend = smcTrend.new(0)
+
+var smcTrailingExtremes smcTrailing = smcTrailingExtremes.new()
+
+var array<smcFairValueGap> smcFvgs = array.new<smcFairValueGap>()
+
+float smcAtr = ta.atr(200)
+
+smcLeg(int size) =>
+    var int leg = 0    
+    bool newLegHigh = high[size] > ta.highest(size)
+    bool newLegLow  = low[size]  < ta.lowest(size)
+    if newLegHigh
+        leg := 0
+    else if newLegLow
+        leg := 1
+    leg
+
+smcDrawEq(smcPivot p, float lvl, int sz, bool isHigh) =>
+    smcEqualDisplay eDisp = isHigh ? smcEqHighDisp : smcEqLowDisp
+    string tag = isHigh ? "EQH" : "EQL"
+    color c = isHigh ? smcSwingBearColor : smcSwingBullColor
+    string lStyle = isHigh ? label.style_label_down : label.style_label_up
+    if smcModeInput == "Present"
+        line.delete(eDisp.l_ine)
+        label.delete(eDisp.l_abel)
+    eDisp.l_ine := line.new(chart.point.new(p.barTime,na,p.currentLevel), chart.point.new(time[sz],na,lvl), xloc=xloc.bar_time, color=c, style=line.style_dotted)
+    int lPos = math.round(0.5*(p.barIndex + bar_index - sz))
+    eDisp.l_abel := label.new(chart.point.new(na,lPos,lvl), tag, xloc.bar_index, color=color(na), textcolor=c, style=lStyle, size=size.tiny)
+
+smcGetCurrentStructure(int sz, bool checkEq=false, bool isInt=false) =>
+    int currentLeg = smcLeg(sz)
+    bool newPivot  = ta.change(currentLeg) != 0
+    bool pivotLow  = ta.change(currentLeg) == 1
+    bool pivotHigh = ta.change(currentLeg) == -1
+
+    if newPivot
+        if pivotLow
+            smcPivot p_ivot = checkEq ? smcEqLow : isInt ? smcInternalLow : smcSwingLow
+            if checkEq and math.abs(p_ivot.currentLevel - low[sz]) < smcEqThreshInput * smcAtr                
+                smcDrawEq(p_ivot, low[sz], sz, false)
+            p_ivot.lastLevel    := p_ivot.currentLevel
+            p_ivot.currentLevel := low[sz]
+            p_ivot.crossed      := false
+            p_ivot.barTime      := time[sz]
+            p_ivot.barIndex     := bar_index[sz]
+            if not checkEq and not isInt
+                smcTrailing.bottom         := p_ivot.currentLevel
+                smcTrailing.barTime        := p_ivot.barTime
+                smcTrailing.barIndex       := p_ivot.barIndex
+                smcTrailing.lastBottomTime := p_ivot.barTime
+        else
+            smcPivot p_ivot = checkEq ? smcEqHigh : isInt ? smcInternalHigh : smcSwingHigh
+            if checkEq and math.abs(p_ivot.currentLevel - high[sz]) < smcEqThreshInput * smcAtr
+                smcDrawEq(p_ivot, high[sz], sz, true)
+            p_ivot.lastLevel    := p_ivot.currentLevel
+            p_ivot.currentLevel := high[sz]
+            p_ivot.crossed      := false
+            p_ivot.barTime      := time[sz]
+            p_ivot.barIndex     := bar_index[sz]
+            if not checkEq and not isInt
+                smcTrailing.top            := p_ivot.currentLevel
+                smcTrailing.barTime        := p_ivot.barTime
+                smcTrailing.barIndex       := p_ivot.barIndex
+                smcTrailing.lastTopTime    := p_ivot.barTime
+
+smcDrawStruct(smcPivot p, string tt, color c, string lineSty, string lblSty, string lSize) =>    
+    var line l_ine = line.new(na,na,na,na,xloc=xloc.bar_time)
+    var label l_abel = label.new(na,na)
+    if smcModeInput == "Present"
+        l_ine.delete()
+        l_abel.delete()
+    l_ine := line.new(chart.point.new(p.barTime,na,p.currentLevel), chart.point.new(time,na,p.currentLevel), xloc.bar_time, color=c, style=lineSty)
+    l_abel := label.new(chart.point.new(na,math.round(0.5*(p.barIndex+bar_index)),p.currentLevel), tt, xloc.bar_index, color=color(na), textcolor=c, style=lblSty, size=size.small)
+
+smcCheckBreak(bool isInt=false) =>
+    smcPivot pHigh = isInt ? smcInternalHigh : smcSwingHigh
+    smcTrend t     = isInt ? smcInternalTrend : smcSwingTrend
+    string lSty    = isInt ? line.style_dashed : line.style_solid
+    string lSz     = isInt ? "Tiny" : "Small"
+    color cBull    = isInt ? smcInternalBullColor : smcSwingBullColor
+
+    if ta.crossover(close, pHigh.currentLevel) and not pHigh.crossed
+        string tag = t.bias == -1 ? "CHoCH" : "BOS"
+        pHigh.crossed := true
+        t.bias := 1
+        bool dispCon = isInt ? smcShowInternalsInput and (smcInternalBull == "All" or (smcInternalBull == "BOS" and tag != "CHoCH") or (smcInternalBull == "CHoCH" and tag == "CHoCH")) : smcShowStructureInput and (smcSwingBull == "All" or (smcSwingBull == "BOS" and tag != "CHoCH") or (smcSwingBull == "CHoCH" and tag == "CHoCH"))
+        if dispCon and runSMC                        
+            smcDrawStruct(pHigh, tag, cBull, lSty, label.style_label_down, lSz)
+
+    smcPivot pLow = isInt ? smcInternalLow : smcSwingLow    
+    color cBear   = isInt ? smcInternalBearColor : smcSwingBearColor
+
+    if ta.crossunder(close, pLow.currentLevel) and not pLow.crossed
+        string tag = t.bias == 1 ? "CHoCH" : "BOS"
+        pLow.crossed := true
+        t.bias := -1
+        bool dispCon = isInt ? smcShowInternalsInput and (smcInternalBear == "All" or (smcInternalBear == "BOS" and tag != "CHoCH") or (smcInternalBear == "CHoCH" and tag == "CHoCH")) : smcShowStructureInput and (smcSwingBear == "All" or (smcSwingBear == "BOS" and tag != "CHoCH") or (smcSwingBear == "CHoCH" and tag == "CHoCH"))
+        if dispCon and runSMC                        
+            smcDrawStruct(pLow, tag, cBear, lSty, label.style_label_up, lSz)
+
+smcBoxFVG(lt,rt,tp,bp,c) => box.new(chart.point.new(lt,na,tp), chart.point.new(rt + smcFvgExtendInput * (time-time[1]),na,bp), xloc=xloc.bar_time, border_color=c, bgcolor=c)
+
+smcDrawGaps() => 
+    bool isBullGap = low > high[2] and close[1] > high[2]
+    bool isBearGap = high < low[2] and close[1] < low[2]
+    if runSMC
+        for [idx, f] in smcFvgs
+            if (low < f.bottom and f.bias == 1) or (high > f.top and f.bias == -1)
+                f.topBox.delete()
+                f.bottomBox.delete()
+                smcFvgs.remove(idx)
+        if isBullGap
+            smcFvgs.unshift(smcFairValueGap.new(low, high[2], 1, smcBoxFVG(time[1], time, low, math.avg(low,high[2]), smcFvgBullishColor), smcBoxFVG(time[1], time, math.avg(low,high[2]), high[2], smcFvgBullishColor)))
+        if isBearGap
+            smcFvgs.unshift(smcFairValueGap.new(high, low[2], -1, smcBoxFVG(time[1], time, high, math.avg(high,low[2]), smcFvgBearishColor), smcBoxFVG(time[1], time, math.avg(high,low[2]), low[2], smcFvgBearishColor)))
+
+smcDrawZone(float lvl, int lIdx, float tp, float bp, string tg, color zc, string sty) =>
+    var label l = label.new(na,na,text=tg, color=color(na),textcolor=zc, style=sty, size=size.small)
+    var box b = box.new(na,na,na,na,bgcolor=color.new(zc,80),border_color=color(na), xloc=xloc.bar_time)
+    b.set_top_left_point(chart.point.new(smcTrailing.barTime,na,tp))
+    b.set_bottom_right_point(chart.point.new(last_bar_time,na,bp))
+    l.set_point(chart.point.new(na,lIdx,lvl))
+
+if runSMC
+    smcTrailing.top            := math.max(high, smcTrailing.top)
+    smcTrailing.lastTopTime    := smcTrailing.top == high ? time : smcTrailing.lastTopTime
+    smcTrailing.bottom         := math.min(low, smcTrailing.bottom)
+    smcTrailing.lastBottomTime := smcTrailing.bottom == low ? time : smcTrailing.lastBottomTime
+
+    smcGetCurrentStructure(50, false, false)
+    smcGetCurrentStructure(5, false, true)
+    
+    if smcShowEqInput
+        smcGetCurrentStructure(smcEqLenInput, true)
+    
+    smcCheckBreak(true)
+    smcCheckBreak(false)
+
+    if smcShowFvgInput
+        smcDrawGaps()
+    
+    if smcShowZonesInput and barstate.islast
+        smcDrawZone(smcTrailing.top, math.round(0.5*(smcTrailing.barIndex + last_bar_index)), smcTrailing.top, 0.95*smcTrailing.top + 0.05*smcTrailing.bottom, "Premium", smcPremiumColor, label.style_label_down)
+        smcDrawZone(smcTrailing.bottom, math.round(0.5*(smcTrailing.barIndex + last_bar_index)), 0.95*smcTrailing.bottom + 0.05*smcTrailing.top, smcTrailing.bottom, "Discount", smcDiscountColor, label.style_label_up)
+
+
+
+// ══════════════════════════════════════
+// 🌟 UNIFIED GAUTAM SINGH DASHBOARD
+// ══════════════════════════════════════
+if (runVWAP or runPS) and barstate.islast
+    var gsDashTable = table.new(getDashPos(dashPosStr), 2, 20, TABLE_BG, TABLE_BORDER, 1, TABLE_BORDER, 1)
+
+    table.cell(gsDashTable, 0, 0, "Gautam Singh Master Algo", text_color=color.white, bgcolor=HEADER_BG, text_size=size.small, text_halign=text.align_center)
+    table.merge_cells(gsDashTable, 0, 0, 1, 0)
+
+    int r = 1
+
+    if runPS
+        table.cell(gsDashTable, 0, r, "— PRECISION SNIPER —", text_color=color.gray, bgcolor=TABLE_BG, text_size=size.small, text_halign=text.align_center)
+        table.merge_cells(gsDashTable, 0, r, 1, r)
+        r += 1
+
+        string trendStr = psEmaFast > psEmaSlow and close > psEmaTrend ? "Bullish" : psEmaFast < psEmaSlow and close < psEmaTrend ? "Bearish" : "Neutral"
+        color trendCol = trendStr == "Bullish" ? psBullColor : trendStr == "Bearish" ? psBearColor : psNeutralColor
+        table.cell(gsDashTable, 0, r, "Trend", text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_BG)
+        table.cell(gsDashTable, 1, r, trendStr, text_color = trendCol, text_size = size.small, bgcolor = TABLE_BG)
+        r += 1
+
+        float activeScore = psTradeDir == 1 ? psBullScore : psTradeDir == -1 ? psBearScore : math.max(psBullScore, psBearScore)
+        string scoreStr = safeStr(activeScore, "#.#") + " / 10"
+        color scoreCol = activeScore >= 7 ? psBullColor : activeScore >= 5 ? psNeutralColor : psBearColor
+        table.cell(gsDashTable, 0, r, "Score", text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+        table.cell(gsDashTable, 1, r, scoreStr, text_color = scoreCol, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+        r += 1
+
+        color statusCol = psTradeStatus == "No Trade" ? TEXT_MUTED : str.contains(psTradeStatus, "TP") ? psBullColor : psNeutralColor
+        table.cell(gsDashTable, 0, r, "Status", text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_BG)
+        table.cell(gsDashTable, 1, r, psTradeStatus, text_color = statusCol, text_size = size.small, bgcolor = TABLE_BG)
+        r += 1
+
+        // SPACING
+        table.cell(gsDashTable, 0, r, "", bgcolor=color(na))
+        table.merge_cells(gsDashTable, 0, r, 1, r)
+        r += 1
+
+    if runVWAP
+        table.cell(gsDashTable, 0, r, "— DS VWAP —", text_color=color.gray, bgcolor=TABLE_BG, text_size=size.small, text_halign=text.align_center)
+        table.merge_cells(gsDashTable, 0, r, 1, r)
+        r += 1
+
+        string vtrendStr = vwapAnchoredDir > 0 ? "Bullish" : "Bearish"
+        color  vtrendClr = vwapAnchoredDir > 0 ? vwapBullVwapInput : vwapBearVwapInput
+        table.cell(gsDashTable, 0, r, "Trend", text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_BG)
+        table.cell(gsDashTable, 1, r, vtrendStr, text_color = vtrendClr, text_size = size.small, bgcolor = TABLE_BG)
+        r += 1
+
+        string vStr = na(currentVwap) ? "—" : str.tostring(currentVwap, format.mintick)
+        table.cell(gsDashTable, 0, r, "VWAP", text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+        table.cell(gsDashTable, 1, r, vStr, text_color = TEXT_COLOR, text_size = size.small, bgcolor = TABLE_ROW_ALT)
+        r += 1
+
+        table.cell(gsDashTable, 0, r, "Last Swing", text_color = TEXT_MUTED, text_size = size.small, bgcolor = TABLE_BG)
+        table.cell(gsDashTable, 1, r, vwapLastSwingStr, text_color = TEXT_COLOR, text_size = size.small, bgcolor = TABLE_BG)
+        r += 1
+
+if showWatermark and barstate.islast
+    var table gsWmTable = table.new(position.top_center, 1, 1, color.new(color.black, 100), color.new(color.black, 100), 0, color.new(color.black, 100), 0)
+    table.cell(gsWmTable, 0, 0, "Gautam Singh Master Algo", text_color = WM_COLOR, text_size = size.normal, text_halign = text.align_center, bgcolor = color.new(color.black, 100))

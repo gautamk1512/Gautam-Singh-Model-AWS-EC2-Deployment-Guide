@@ -1,0 +1,212 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Gautam Singh
+// Gautam Singh Model - Range Filter + Zero-Lag MA
+//@version=5
+indicator("Gautam Singh Model - Range + No Lag", "Gautam Singh Model - Range No Lag [1.0.0]", overlay = true, max_boxes_count = 500, max_labels_count = 500)
+
+// ══════════════════════════════════════════════════════════════════════
+//                    🔒 SECURE LICENSE SYSTEM
+// ══════════════════════════════════════════════════════════════════════
+// ADMIN: Set the activation date below each time you renew a user's license.
+// The indicator will auto-expire 10 days after this date.
+// To renew: update act_year/act_month/act_day and give user the new License Key.
+
+string auth_key1     = input.string("Gautam Singh AI Model", title="Model Key 1", tooltip="Enter 'Gautam Singh AI Model'", group = "🔒 LICENSE ACTIVATION")
+string auth_key2     = input.string("Gautam Singh AI Trader", title="Model Key 2", tooltip="Enter 'Gautam Singh AI Trader'", group = "🔒 LICENSE ACTIVATION")
+string license_key   = input.string("gautamk1512", title="License Key", tooltip="Enter the license key provided by admin", group = "🔒 LICENSE ACTIVATION")
+string allowed_user  = input.string("gautamsingh1207200", title="Licensed User", tooltip="Enter your exact TradingView username", group = "🔒 LICENSE ACTIVATION")
+
+// ─── ADMIN CONTROLS (set these when issuing a license) ───
+int act_year   = input.int(2026, "Activation Year",  group = "🔐 ADMIN - License Period", minval=2024)
+int act_month  = input.int(5,    "Activation Month", group = "🔐 ADMIN - License Period", minval=1, maxval=12)
+int act_day    = input.int(16,   "Activation Day",   group = "🔐 ADMIN - License Period", minval=1, maxval=31)
+int lic_days   = input.int(365,  "License Duration (Days)", group = "🔐 ADMIN - License Period", minval=1, maxval=365)
+
+// ─── TIME CALCULATIONS ───
+activationTime = timestamp(act_year, act_month, act_day, 0, 0, 0)
+expiryTime     = activationTime + (lic_days * 86400000)  // days → milliseconds
+currentTime    = timenow
+daysLeft       = math.max(0, math.ceil((expiryTime - currentTime) / 86400000))
+
+// ─── LICENSE KEY GENERATION ───
+// The valid key is configured by the admin here.
+validLicenseKey = "gautamk1512"
+
+// ─── VALIDATION CHECKS ───
+bool keysValid     = (auth_key1 == "Gautam Singh AI Model") and (auth_key2 == "Gautam Singh AI Trader")
+bool licenseValid  = (license_key == validLicenseKey)
+bool userValid     = (allowed_user == "") or (str.lower(allowed_user) == str.lower(syminfo.session))  // basic check
+bool notExpired    = (currentTime >= activationTime) and (currentTime < expiryTime)
+
+bool isAuthorized  = keysValid and licenseValid and notExpired
+
+// ─── STATUS DISPLAY ───
+var table authTable = table.new(position.middle_center, 1, 4, bgcolor = color.new(#1a1a2e, 0), border_color = color.new(#e94560, 0), border_width = 2, frame_color = color.new(#e94560, 0), frame_width = 3)
+
+if barstate.islast
+    if not keysValid
+        authTable.cell(0, 0, text = "⛔ UNAUTHORIZED ACCESS", text_color = #e94560, text_size = size.large)
+        authTable.cell(0, 1, text = "Required authentication keys not found", text_color = color.white, text_size = size.normal)
+        authTable.cell(0, 2, text = "Enter valid keys in Settings → 🔒 LICENSE ACTIVATION", text_color = color.gray, text_size = size.small)
+        authTable.cell(0, 3, text = "", text_color = color.gray, text_size = size.tiny)
+    else if not licenseValid
+        authTable.cell(0, 0, text = "🔑 INVALID LICENSE KEY", text_color = #ff6b35, text_size = size.large)
+        authTable.cell(0, 1, text = "The license key is incorrect or has been changed", text_color = color.white, text_size = size.normal)
+        authTable.cell(0, 2, text = "Contact admin (Gautam Singh) for a valid license key", text_color = color.gray, text_size = size.small)
+        authTable.cell(0, 3, text = "", text_color = color.gray, text_size = size.tiny)
+    else if not notExpired and currentTime >= expiryTime
+        authTable.cell(0, 0, text = "⏰ ACCESS EXPIRED", text_color = #ff4757, text_size = size.large)
+        authTable.cell(0, 1, text = "Access expired – permission required to continue using this indicator", text_color = color.white, text_size = size.normal)
+        authTable.cell(0, 2, text = "Contact admin (Gautam Singh) to renew your license", text_color = color.gray, text_size = size.small)
+        authTable.cell(0, 3, text = "License expired on: " + str.tostring(act_day) + "/" + str.tostring(act_month) + "/" + str.tostring(act_year) + " + " + str.tostring(lic_days) + " days", text_color = #ff4757, text_size = size.tiny)
+    else if not notExpired
+        authTable.cell(0, 0, text = "⏳ LICENSE NOT YET ACTIVE", text_color = #ffa502, text_size = size.large)
+        authTable.cell(0, 1, text = "This license is scheduled for a future date", text_color = color.white, text_size = size.normal)
+        authTable.cell(0, 2, text = "Activation: " + str.tostring(act_day) + "/" + str.tostring(act_month) + "/" + str.tostring(act_year), text_color = color.gray, text_size = size.small)
+        authTable.cell(0, 3, text = "", text_color = color.gray, text_size = size.tiny)
+    else
+        authTable.delete()
+
+// ─── LICENSE STATUS BAR (shown when authorized) ───
+var table statusBar = table.new(position.top_right, 1, 2, bgcolor = color.new(#0a0a23, 20), border_color = color.new(#1dd1a1, 50), border_width = 1, frame_color = color.new(#1dd1a1, 50), frame_width = 1)
+if barstate.islast and isAuthorized
+    daysColor = daysLeft > 5 ? #1dd1a1 : daysLeft > 2 ? #ffa502 : #ff4757
+    statusBar.cell(0, 0, text = "✅ Gautam Singh Model", text_color = #1dd1a1, text_size = size.tiny)
+    statusBar.cell(0, 1, text = str.tostring(daysLeft) + " days remaining", text_color = daysColor, text_size = size.tiny)
+if barstate.islast and not isAuthorized
+    statusBar.delete()
+
+// ══════════════════════════════════════════════════════════════════════
+//                    ZERO-LAG MA TREND LEVELS INPUTS
+// ══════════════════════════════════════════════════════════════════════
+int  zlma_length  = input.int(15, title="ZLMA Length", group = "ZERO-LAG MA TREND LEVELS")
+bool show_levl    = input.bool(true, "Trend Levels", group = "ZERO-LAG MA TREND LEVELS")
+
+color zl_up = input.color(#30d453, "+", group = "ZERO-LAG MA COLORS", inline = "zl")
+color zl_dn = input.color(#4043f1, "-", group = "ZERO-LAG MA COLORS", inline = "zl")
+
+// ══════════════════════════════════════════════════════════════════════
+//                      RANGE FILTER INPUTS
+// ══════════════════════════════════════════════════════════════════════
+src  = input(defval=close, title="Source", group = "RANGE FILTER")
+per  = input.int(defval=100, minval=1, title="Sampling Period", group = "RANGE FILTER")
+mult = input.float(defval=3.0, minval=0.1, title="Range Multiplier", group = "RANGE FILTER")
+
+color rf_upColor   = input.color(color.white, "Up Color", group = "RANGE FILTER COLORS", inline = "rf")
+color rf_midColor  = input.color(#90bff9, "Mid", group = "RANGE FILTER COLORS", inline = "rf")
+color rf_downColor = input.color(color.blue, "Down", group = "RANGE FILTER COLORS", inline = "rf")
+
+// ══════════════════════════════════════════════════════════════════════
+//                  ZERO-LAG MA CALCULATIONS
+// ══════════════════════════════════════════════════════════════════════
+var box1          = box(na)
+series float atr  = ta.atr(200)
+
+series float emaValue   = ta.ema(close, zlma_length)
+series float correction = close + (close - emaValue)
+series float zlma       = ta.ema(correction, zlma_length)
+
+bool  signalUp          = ta.crossover(zlma, emaValue)
+bool  signalDn          = ta.crossunder(zlma, emaValue)
+
+color zlma_color        = zlma > zlma[3] ? zl_up : zlma < zlma[3] ? zl_dn : na
+color ema_col           = emaValue < zlma ? zl_up : zl_dn
+
+// ══════════════════════════════════════════════════════════════════════
+//                  ZERO-LAG MA VISUALIZATION
+// ══════════════════════════════════════════════════════════════════════
+p1 = plot(isAuthorized ? zlma : na,     color = zlma_color, linewidth = 1, title = "ZLMA")
+p2 = plot(isAuthorized ? emaValue : na, color = ema_col,    linewidth = 1, title = "EMA")
+fill(p1, p2, zlma, emaValue, isAuthorized ? color.new(zlma_color, 80) : na, isAuthorized ? color.new(ema_col, 80) : na)
+
+method draw_box(color col, top, bot, price)=>
+    box.new(
+             bar_index, top, bar_index, bot, col, 1, 
+             bgcolor         = color.new(col, 90), 
+             text            = str.tostring(math.round(price, 2)), 
+             text_size       = size.tiny,
+             text_color      = chart.fg_color,
+             text_halign     = text.align_right
+             )
+
+if show_levl and isAuthorized
+    bool check_signals = signalUp or signalDn
+    switch
+        signalUp => box1 := zl_up.draw_box(zlma, zlma - atr, close)
+        signalDn => box1 := zl_dn.draw_box(zlma + atr, zlma, close)
+    switch
+        not signalUp or not signalDn => box1.set_right(bar_index + 4)  
+        => box1 := box(na)
+    switch
+        ta.crossunder(high, box1.get_bottom()) and not check_signals[1] and not check_signals and emaValue > zlma=>
+            label.new(bar_index - 1, high[1], "▼", color = color(na), textcolor = zl_dn, style = label.style_label_down)
+        ta.crossover(low, box1.get_top()) and not check_signals and not check_signals[1] and emaValue < zlma=>
+            label.new(bar_index - 1, low[1],  "▲", color = color(na), textcolor = zl_up, style = label.style_label_up)
+
+plotshape(isAuthorized and signalUp ? zlma : na, "", shape.diamond, location.absolute, color = zl_up, size = size.tiny)
+plotshape(isAuthorized and signalDn ? zlma : na, "", shape.diamond, location.absolute, color = zl_dn, size = size.tiny)
+
+// ══════════════════════════════════════════════════════════════════════
+//                   RANGE FILTER CALCULATIONS
+// ══════════════════════════════════════════════════════════════════════
+smoothrng(x, t, m) =>
+    wper = t * 2 - 1
+    avrng = ta.ema(math.abs(x - x[1]), t)
+    smoothrng = ta.ema(avrng, wper) * m
+    smoothrng
+smrng = smoothrng(src, per, mult)
+
+rngfilt(x, r) =>
+    rngfilt = x
+    rngfilt := x > nz(rngfilt[1]) ? x - r < nz(rngfilt[1]) ? nz(rngfilt[1]) : x - r : 
+       x + r > nz(rngfilt[1]) ? nz(rngfilt[1]) : x + r
+    rngfilt
+filt = rngfilt(src, smrng)
+
+upward = 0.0
+upward := filt > filt[1] ? nz(upward[1]) + 1 : filt < filt[1] ? 0 : nz(upward[1])
+downward = 0.0
+downward := filt < filt[1] ? nz(downward[1]) + 1 : filt > filt[1] ? 0 : nz(downward[1])
+
+hband = filt + smrng
+lband = filt - smrng
+
+filtcolor = upward > 0 ? rf_upColor : downward > 0 ? rf_downColor : rf_midColor
+barcolor_rf = src > filt and src > src[1] and upward > 0 ? rf_upColor :
+   src > filt and src < src[1] and upward > 0 ? rf_upColor : 
+   src < filt and src < src[1] and downward > 0 ? rf_downColor : 
+   src < filt and src > src[1] and downward > 0 ? rf_downColor : rf_midColor
+
+// ══════════════════════════════════════════════════════════════════════
+//                   RANGE FILTER VISUALIZATION
+// ══════════════════════════════════════════════════════════════════════
+filtplot  = plot(isAuthorized ? filt : na,  color=filtcolor, linewidth=2, title="Range Filter")
+hbandplot = plot(isAuthorized ? hband : na, color=color.new(rf_upColor, 70), title="High Target")
+lbandplot = plot(isAuthorized ? lband : na, color=color.new(rf_downColor, 70), title="Low Target")
+
+fill(hbandplot, filtplot, color=isAuthorized ? color.new(rf_upColor, 90) : na, title="High Target Range")
+fill(lbandplot, filtplot, color=isAuthorized ? color.new(rf_downColor, 90) : na, title="Low Target Range")
+
+barcolor(isAuthorized ? barcolor_rf : na)
+
+// Break Outs
+longCond = bool(na)
+shortCond = bool(na)
+longCond := src > filt and src > src[1] and upward > 0 or 
+   src > filt and src < src[1] and upward > 0
+shortCond := src < filt and src < src[1] and downward > 0 or 
+   src < filt and src > src[1] and downward > 0
+
+CondIni = 0
+CondIni := longCond ? 1 : shortCond ? -1 : CondIni[1]
+longCondition = longCond and CondIni[1] == -1
+shortCondition = shortCond and CondIni[1] == 1
+
+// Buy/Sell Signals
+plotshape(isAuthorized and longCondition, title="Buy Signal", text="Buy", textcolor=color.white, style=shape.labelup, size=size.small, location=location.belowbar, color=color.new(#aaaaaa, 20))
+plotshape(isAuthorized and shortCondition, title="Sell Signal", text="Sell", textcolor=color.white, style=shape.labeldown, size=size.small, location=location.abovebar, color=color.new(rf_downColor, 20))
+
+// Alerts
+alertcondition(longCondition, title="Buy alert on Range Filter", message="Buy alert on Range Filter")
+alertcondition(shortCondition, title="Sell alert on Range Filter", message="Sell alert on Range Filter")
+alertcondition(longCondition or shortCondition, title="Buy and Sell alert on Range Filter", message="Buy and Sell alert on Range Filter")
